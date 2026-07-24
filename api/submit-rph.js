@@ -1,5 +1,3 @@
-const { submitRPH } = require('../modules/rph-assist/rph-submitter.js');
-
 module.exports = exports = async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -13,6 +11,20 @@ module.exports = exports = async (req, res) => {
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
+    }
+
+    // Tangkap sebarang ralat semasa memuatkan pustaka
+    let submitRPH;
+    try {
+        const rphSubmitter = require('../modules/rph-assist/rph-submitter.js');
+        submitRPH = rphSubmitter.submitRPH;
+    } catch (initErr) {
+        return res.status(500).json({ 
+            success: false, 
+            error: 'Gagal memuatkan komponen utama', 
+            details: initErr.message,
+            stack: initErr.stack 
+        });
     }
 
     if (req.method !== 'POST') {
@@ -31,14 +43,11 @@ module.exports = exports = async (req, res) => {
 
         console.log(`[Vercel API] Menerima arahan submitRPH untuk ${lessons.length} kelas pada tarikh ${miwDate}`);
         
-        // Let it run in the background if possible, or await it
-        // Vercel will terminate background processes when the response is sent, so we MUST await it.
-        // It's recommended to configure maxDuration: 60 in vercel.json.
         await submitRPH(lessons, miwDate, credentials, apiKey, bbm);
         
         res.status(200).json({ success: true, message: 'Automasi RPH selesai dengan jayanya.' });
     } catch (error) {
         console.error('[Vercel API] Error in submit-rph:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: error.message, stack: error.stack });
     }
 };
