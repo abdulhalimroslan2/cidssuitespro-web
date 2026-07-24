@@ -1,5 +1,4 @@
 const { chromium } = require('playwright-core');
-const chromiumSparticuz = require('@sparticuz/chromium');
 const path = require('path');
 const fs = require('fs');
 
@@ -14,6 +13,7 @@ async function launchBrowser(options = {}) {
     if (process.env.VERCEL || process.env.AWS_REGION) {
         // We are on Vercel or AWS Lambda
         console.log("Using Sparticuz Chromium for Vercel...");
+        const chromiumSparticuz = (await import('@sparticuz/chromium')).default;
         executablePath = await chromiumSparticuz.executablePath();
         browserOptions.args = chromiumSparticuz.args;
         browserOptions.headless = chromiumSparticuz.headless;
