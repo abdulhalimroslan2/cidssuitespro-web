@@ -9,16 +9,19 @@ async function getRptList(username, password) {
         const page = await context.newPage();
 
         console.log('Navigating to login page...');
-        await page.goto('https://asiemodel.net/login.php', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.goto('https://asiemodel.net/model/main.php?cb=ms', { waitUntil: 'domcontentloaded', timeout: 30000 });
         
         console.log('Filling credentials...');
-        await page.fill('input[name="user_id"]', username);
-        await page.fill('input[name="user_password"]', password);
-        await page.click('button[type="submit"]');
-
+        await page.fill('input[name="username"]', username);
+        await page.fill('input[name="password"]', password);
         console.log('Waiting for login to complete...');
-        // Wait for the main dashboard to load
-        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 });
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {}),
+            page.click('button[type="submit"], input[type="submit"]')
+        ]);
+
+        console.log('Navigating to RPT page (search9.php)...');
+        await page.goto('https://asiemodel.net/model/search9.php?action=search_yearly', { waitUntil: 'domcontentloaded', timeout: 30000 });
 
         console.log('Extracting RPT links...');
         const rpts = await page.evaluate(() => {
@@ -63,10 +66,8 @@ async function getRptList(username, password) {
 if (require.main === module) {
     (async () => {
         try {
-            // WE NEED CREDENTIALS TO TEST THIS!
-            // Without valid credentials, it won't be able to log in.
-            // But we can check if it compiles and runs.
-            const rpts = await getRptList('dummy', 'dummy');
+            // Testing with real credentials as requested by user
+            const rpts = await getRptList('Roslan2', '@reeZ860');
             console.log('RPTs:', rpts);
         } catch (e) {
             console.error('Test failed:', e);
