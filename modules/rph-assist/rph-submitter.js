@@ -6,12 +6,22 @@ const path = require('path');
 async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm = []) {
     const os = require('os');
     const platform = os.platform();
-    const userDataPath = platform === 'win32' 
-        ? path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'rph-automator')
-        : (platform === 'darwin' 
-            ? path.join(os.homedir(), 'Library', 'Application Support', 'rph-automator')
-            : path.join(os.homedir(), '.config', 'rph-automator'));
+    let userDataPath;
     
+    if (process.env.VERCEL || process.env.AWS_REGION) {
+        userDataPath = '/tmp';
+    } else {
+        userDataPath = platform === 'win32' 
+            ? path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'rph-automator')
+            : (platform === 'darwin' 
+                ? path.join(os.homedir(), 'Library', 'Application Support', 'rph-automator')
+                : path.join(os.homedir(), '.config', 'rph-automator'));
+    }
+    
+    if (!fs.existsSync(userDataPath) && !(process.env.VERCEL || process.env.AWS_REGION)) {
+        fs.mkdirSync(userDataPath, { recursive: true });
+    }
+
     const authPath = path.join(userDataPath, 'auth.json');
     if (!fs.existsSync(authPath)) {
         if (credentials.username && credentials.password) {
