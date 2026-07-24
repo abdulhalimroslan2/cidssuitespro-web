@@ -25,13 +25,7 @@ async function launchBrowser(options = {}) {
         if (fs.existsSync(macChrome)) {
             executablePath = macChrome;
         } else {
-            // Import standard playwright for local if core doesn't have it
-            try {
-                const standardPw = require('playwright');
-                return await standardPw.chromium.launch(browserOptions);
-            } catch (e) {
-                console.log("Please install 'playwright' package for local testing, or ensure Chrome is installed.");
-            }
+            throw new Error("Local chromium executable not found for local testing.");
         }
     }
 
