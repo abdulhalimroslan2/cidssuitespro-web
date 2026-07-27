@@ -7,17 +7,30 @@ async function getRptList(username, password) {
         browser = await launchBrowser({ headless: true });
         const context = await browser.newContext();
         const page = await context.newPage();
+        
+        // Block images, fonts, and css to save memory
+        await page.route('**/*', (route) => {
+            const type = route.request().resourceType();
+            if (['image', 'stylesheet', 'font', 'media'].includes(type)) {
+                route.abort();
+            } else {
+                route.continue();
+            }
+        });
 
         console.log('Navigating to login page...');
         await page.goto('https://asiemodel.net/model/main.php?cb=ms', { waitUntil: 'domcontentloaded', timeout: 30000 });
         
         console.log('Filling credentials...');
-        await page.fill('input[name="username"]', username);
-        await page.fill('input[name="password"]', password);
+        const emailInput = page.locator('input[type="email"], input[name="email"], input[name="username"], input[name="login"], input[placeholder="Login"], input[placeholder="Username"], input[placeholder*="E-mel"]').first();
+        await emailInput.fill(username);
+        const pwdInput = page.locator('input[type="password"], input[name="password"], input[placeholder="Password"]').first();
+        await pwdInput.fill(password);
+        
         console.log('Waiting for login to complete...');
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {}),
-            page.click('button[type="submit"], input[type="submit"]')
+            page.locator('button[type="submit"], input[type="submit"], button:has-text("Log in"), button:has-text("Login"), button:has-text("Log Masuk")').first().click()
         ]);
 
         console.log('Navigating to RPT page (search9.php)...');
@@ -56,6 +69,18 @@ async function getRptList(username, password) {
         return rpts;
     } catch (e) {
         console.error('Error fetching RPT list:', e);
+        if (browser && e.message.includes('Timeout')) {
+            try {
+                const pages = await browser.contexts()[0].pages();
+                if (pages.length > 0) {
+                    const html = await pages[0].content();
+                    console.log("PAGE HTML AT TIMEOUT:", html.substring(0, 500));
+                    throw new Error(e.message + "\nPage HTML snippet: " + html.substring(0, 200));
+                }
+            } catch (innerErr) {
+                console.error("Could not extract HTML:", innerErr);
+            }
+        }
         throw e;
     } finally {
         if (browser) await browser.close();

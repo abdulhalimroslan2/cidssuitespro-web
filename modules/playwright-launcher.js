@@ -15,7 +15,16 @@ async function launchBrowser(options = {}) {
         console.log("Using Sparticuz Chromium for Vercel...");
         const chromiumSparticuz = (await import('@sparticuz/chromium')).default;
         executablePath = await chromiumSparticuz.executablePath();
-        browserOptions.args = chromiumSparticuz.args;
+        browserOptions.args = [
+            ...chromiumSparticuz.args,
+            '--disable-gpu',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--disable-gl-drawing-for-tests',
+            '--mute-audio'
+        ];
         browserOptions.headless = chromiumSparticuz.headless;
     } else {
         // We are on local machine or standard server, use system chromium or fallback

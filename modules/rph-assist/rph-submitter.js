@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm = []) {
+    let resultStats = { successCount: 0, skippedCount: 0, errors: [] };
     const os = require('os');
     const platform = os.platform();
     let userDataPath;
@@ -37,13 +38,29 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
     const browser = await launchBrowser({ headless: true }); 
     const context = await browser.newContext({ storageState: authPath });
     const page = await context.newPage();
+    
+    // Block images, fonts, and css to save memory
+    await page.route('**/*', (route) => {
+        const type = route.request().resourceType();
+        if (['image', 'stylesheet', 'font', 'media'].includes(type)) {
+            route.abort();
+        } else {
+            route.continue();
+        }
+    });
 
     try {
         console.log("Membuka ASIE Model...");
+        console.log(`[DEBUG] Credentials: username=${credentials.username}, password=${credentials.password ? '***' + credentials.password.slice(-3) : 'TIADA'}`);
         
         // --- AUTO-LOGIN SECTION ---
-        await page.goto('https://asiemodel.net/model/main.php?cb=ms');
-        await page.waitForTimeout(2000); // Tunggu redirect jika ada
+        await page.goto('https://asiemodel.net/model/main.php?cb=ms', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForTimeout(3000); // Tunggu redirect jika ada
+        
+        // Log diagnostik
+        const currentUrl = page.url();
+        const pageTitle = await page.title();
+        console.log(`[DEBUG] Selepas goto: URL=${currentUrl}, Title=${pageTitle}`);
         
         if (credentials.username && credentials.password) {
             // Semak jika ruangan log masuk (username/email) wujud pada halaman
@@ -59,7 +76,6 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                         await pwdInput.fill(credentials.password);
                         await page.locator('button[type="submit"], input[type="submit"], button:has-text("Log in"), button:has-text("Login"), button:has-text("Log Masuk")').first().click();
                     } else {
-                        // Anggap sebagai Google Sign In (perlu klik Next)
                         await page.getByRole('button', { name: /Next|Seterusnya|Berikutnya/i }).click();
                         await page.waitForTimeout(3000); 
                         if (await pwdInput.isVisible({ timeout: 5000 })) {
@@ -69,16 +85,52 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                     }
                     
                     await page.waitForNavigation({ timeout: 15000 }).catch(() => {});
-                    console.log("Log masuk automatik selesai. Menyimpan sesi baharu...");
+                    console.log("Log masuk automatik selesai.");
+                    
+                    const afterLoginUrl = page.url();
+                    const afterLoginTitle = await page.title();
+                    console.log(`[DEBUG] Selepas login: URL=${afterLoginUrl}, Title=${afterLoginTitle}`);
+                    
                     await context.storageState({ path: authPath });
                     
                     // Pergi semula ke halaman utama selepas login
-                    await page.goto('https://asiemodel.net/model/main.php?cb=ms');
+                    await page.goto('https://asiemodel.net/model/main.php?cb=ms', { waitUntil: 'domcontentloaded', timeout: 30000 });
                 } catch(e) {
-                    console.log("Log masuk automatik tidak berjaya, meneruskan dengan harapan sesi masih aktif: " + e.message);
+                    console.log("Log masuk automatik tidak berjaya: " + e.message);
+                    
+                    // Cuba login melalui POST langsung (fallback)
+                    console.log("[FALLBACK] Cuba login melalui POST terus...");
+                    try {
+                        await page.goto('https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms', { waitUntil: 'domcontentloaded', timeout: 15000 });
+                        await page.waitForTimeout(1000);
+                        const loginInput = page.locator('input[name="username"], input[name="login"], input[type="email"]').first();
+                        if (await loginInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+                            await loginInput.fill(credentials.username);
+                            const pwdInput2 = page.locator('input[type="password"]').first();
+                            await pwdInput2.fill(credentials.password);
+                            await page.locator('input[type="submit"], button[type="submit"]').first().click();
+                            await page.waitForTimeout(5000);
+                            console.log(`[FALLBACK] Selepas login POST: URL=${page.url()}`);
+                        }
+                    } catch(e2) {
+                        console.log("[FALLBACK] Login POST juga gagal: " + e2.message);
+                    }
                 }
+            } else {
+                console.log("[DEBUG] Tiada login form dikesan - mungkin sudah log masuk.");
             }
         }
+        
+        // Diagnostic: log halaman semasa sebelum masuk ke loop kelas
+        const preLoopUrl = page.url();
+        const preLoopTitle = await page.title();
+        const bodyText = await page.locator('body').textContent().catch(() => 'GAGAL BACA BODY');
+        console.log(`[DEBUG] Sebelum loop: URL=${preLoopUrl}, Title=${preLoopTitle}`);
+        console.log(`[DEBUG] Body text (200 char): ${bodyText.substring(0, 200)}`);
+        
+        // Semak jika pautan eRPH wujud
+        const erpLinks = await page.locator('a').evaluateAll(links => links.map(l => ({ text: l.textContent.trim().substring(0,30), href: l.href })).filter(l => l.text.toLowerCase().includes('rph') || l.text.toLowerCase().includes('erph')));
+        console.log(`[DEBUG] Pautan eRPH dijumpai: ${JSON.stringify(erpLinks)}`);
         // --------------------------
         
         // Daftar listener dialog SECARA GLOBAL di luar loop untuk elakkan pertindihan
@@ -96,9 +148,44 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                 console.log(`\nMemproses RPH untuk: ${lesson.subject_id} | ${lesson.class_id}`);
                 
                 // Pergi ke halaman asal setiap kali untuk memulakan pemilihan baharu
-                await page.goto('https://asiemodel.net/model/main.php?cb=ms');
-                await page.getByRole('link', { name: 'eRPH' }).click();
-                await page.getByRole('link', { name: 'Buka Rekod' }).click();
+                await page.goto('https://asiemodel.net/model/main.php?cb=ms', { waitUntil: 'domcontentloaded', timeout: 30000 });
+                await page.waitForTimeout(2000);
+                
+                // Cuba klik eRPH dengan pelbagai cara
+                let erphClicked = false;
+                try {
+                    await page.getByRole('link', { name: 'eRPH' }).click({ timeout: 10000 });
+                    erphClicked = true;
+                } catch (e1) {
+                    console.log('[DEBUG] getByRole eRPH gagal, cuba locator text...');
+                    try {
+                        await page.locator('a:has-text("eRPH"), a:has-text("RPH"), a[href*="rph"], a[href*="RPH"]').first().click({ timeout: 10000 });
+                        erphClicked = true;
+                    } catch (e2) {
+                        console.log('[DEBUG] locator text juga gagal, cuba href langsung...');
+                        try {
+                            // Cuba navigate terus ke halaman eRPH
+                            await page.goto('https://asiemodel.net/model/main.php?cb=rph', { waitUntil: 'domcontentloaded', timeout: 15000 });
+                            erphClicked = true;
+                        } catch (e3) {
+                            const curUrl = page.url();
+                            const curBody = await page.locator('body').textContent().catch(() => '');
+                            throw new Error(`Gagal navigasi ke eRPH. URL semasa: ${curUrl}. Body: ${curBody.substring(0, 150)}`);
+                        }
+                    }
+                }
+                
+                if (erphClicked) {
+                    await page.waitForTimeout(1500);
+                    try {
+                        await page.getByRole('link', { name: 'Buka Rekod' }).click({ timeout: 10000 });
+                    } catch (e) {
+                        console.log('[DEBUG] Buka Rekod gagal, cuba locator...');
+                        await page.locator('a:has-text("Buka Rekod"), a:has-text("buka rekod")').first().click({ timeout: 10000 }).catch(() => {
+                            console.log('[DEBUG] Buka Rekod juga gagal - mungkin sudah di halaman yang betul');
+                        });
+                    }
+                }
                 await page.waitForTimeout(1500);
             
             // 1. Pilih Kelas (Aras Kelas) menggunakan Padanan Pintar
@@ -108,15 +195,15 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
             console.log("Class Options Available:", JSON.stringify(classOptions));
             
             let matchedClassValue = null;
-            const targetClassId = lesson.class_id;
+            const targetClassId = lesson.class_id || lesson.class_name || lesson.class || "";
             
             // Cubaan 1: Padanan Tepat (Exact match)
             let exactClassMatch = classOptions.find(o => o.value === targetClassId);
             
             // Cubaan 2: Fallback value (cth: cg_secondary-form2 -> form2)
-            const fallbackClassVal = targetClassId.includes('-') ? targetClassId.split('-')[1] : targetClassId;
+            const fallbackClassVal = targetClassId.includes('-') ? targetClassId.split('-')[1] : targetClassId.toLowerCase().trim();
             if (!exactClassMatch) {
-                exactClassMatch = classOptions.find(o => o.value === fallbackClassVal);
+                exactClassMatch = classOptions.find(o => o.value === fallbackClassVal || o.text.toLowerCase() === targetClassId.toLowerCase());
             }
             
             if (exactClassMatch) {
@@ -129,6 +216,12 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                     fuzzySearchTerm = 'tingkatan ' + fallbackClassVal.replace('form', '');
                 } else if (fallbackClassVal.startsWith('year')) {
                     fuzzySearchTerm = 'tahun ' + fallbackClassVal.replace('year', '');
+                } else {
+                    // Fallback for names like '1 RAUDAH' or '2 AMANAH' -> 'tahun 1' or 'tingkatan 1'
+                    const matchNumber = fallbackClassVal.match(/\d+/);
+                    if (matchNumber) {
+                        fuzzySearchTerm = matchNumber[0]; // just use the number to match "Tahun 1" or "Tingkatan 1" based on text
+                    }
                 }
                 
                 if (fuzzySearchTerm) {
@@ -145,7 +238,8 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                 console.log(`[Semak Silang Berjaya] Aras Kelas dipilih dalam dropdown: "${matchedClassValue}"`);
             } else {
                 console.log(`[Ralat] Gagal memadankan Aras Kelas untuk ${targetClassId}. Aras kelas ini tiada dalam senarai pilihan. Melangkau kelas ini...`);
-                // Skip kelas ini kerana sistem ASIE akan menolak klik pada slot jadual jika Aras Kelas tidak dipilih
+                resultStats.skippedCount++;
+                resultStats.errors.push(`Gagal padanan kelas: ${targetClassId}`);
                 continue;
             }
             
@@ -158,7 +252,7 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
             );
             
             let matchedValue = null;
-            const targetId = lesson.subject_id;
+            const targetId = lesson.subject_id || lesson.subject || "";
             
             // Cubaan 1: Cari padanan tepat (exact value match)
             const exactMatch = subjectOptions.find(o => o.value === targetId);
@@ -166,9 +260,10 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                 matchedValue = exactMatch.value;
             } else {
                 // Cubaan 2: Cari padanan teks (label match)
+                const targetTextLower = targetId.toLowerCase().trim();
                 const textMatch = subjectOptions.find(o => 
-                    o.text.toLowerCase() === targetId.toLowerCase() || 
-                    o.text.toLowerCase().includes(targetId.toLowerCase().replace('sg_language-', '').replace('sg_science_math-', ''))
+                    o.text.toLowerCase() === targetTextLower || 
+                    o.text.toLowerCase().includes(targetTextLower.replace('sg_language-', '').replace('sg_science_math-', ''))
                 );
                 
                 if (textMatch) {
@@ -368,6 +463,8 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
             if (targetSessions === 0) {
                 console.log(`Tiada slot jadual dijumpai untuk ${lesson.session_text}. Melangkau...`);
                 await page.keyboard.press('Escape');
+                resultStats.skippedCount++;
+                resultStats.errors.push(`Jadual ASIE tiada slot untuk kelas ${lesson.session_text}`);
                 continue;
             }
             
@@ -857,6 +954,7 @@ Guru mengingatkan pelajar tentang jadual peperiksaan seterusnya dan menggalakkan
                 }
                 console.log(`RPH Sesi ${successfulSessions + 1} Berjaya Disimpan!`);
                 successfulSessions++;
+                resultStats.successCount++;
                 
                 // Jika masih perlukan sesi seterusnya, kembali ke MIW dan buka jadual semula
                 if (successfulSessions < targetSessions) {
@@ -872,14 +970,36 @@ Guru mengingatkan pelajar tentang jadual peperiksaan seterusnya dan menggalakkan
             } catch (classError) {
                 console.error(`Ralat semasa memproses ${lesson.session_text} (mungkin RPH telah wujud):`, classError.message);
                 console.log("Sistem akan meneruskan ke kelas seterusnya (jika ada)...");
+                resultStats.skippedCount++;
+                resultStats.errors.push(`Ralat kelas ${lesson.session_text}: ${classError.message}`);
             }
         }
 
     } catch (error) {
         console.error("Ralat dalam Playwright:", error);
+        resultStats.errors.push(`Ralat Sistem: ${error.message}`);
     } finally {
         console.log("Menutup pelayar...");
-        await browser.close();
+        if (context) await context.close().catch(() => {});
+        if (browser) await browser.close().catch(() => {});
+        
+        // Bersihkan fail sementara (Chromium leak)
+        if (process.env.VERCEL || process.env.AWS_REGION) {
+            try {
+                const tmpDir = '/tmp';
+                const files = fs.readdirSync(tmpDir);
+                files.forEach(file => {
+                    if (file.startsWith('core.') || file.startsWith('puppeteer_dev_profile-') || file.includes('chromium')) {
+                        fs.rmSync(path.join(tmpDir, file), { recursive: true, force: true });
+                    }
+                });
+                console.log("Memori /tmp dibersihkan.");
+            } catch (e) {
+                console.error("Gagal membersihkan /tmp:", e);
+            }
+        }
+        
+        return resultStats;
     }
 }
 

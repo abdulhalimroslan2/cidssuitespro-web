@@ -43,9 +43,18 @@ module.exports = exports = async (req, res) => {
 
         console.log(`[Vercel API] Menerima arahan submitRPH untuk ${lessons.length} kelas pada tarikh ${miwDate}`);
         
-        await submitRPH(lessons, miwDate, credentials, apiKey, bbm);
-        
-        res.status(200).json({ success: true, message: 'Automasi RPH selesai dengan jayanya.' });
+        const stats = await submitRPH(lessons, miwDate, credentials, apiKey, bbm);
+        if (stats && stats.successCount === 0) {
+            const errMsg = stats.errors.length > 0 ? stats.errors.join(' | ') : 'Sebab tidak diketahui (Sifar slot)';
+            res.status(500).json({ success: false, error: `Tiada RPH berjaya diproses. Ralat: ${errMsg}` });
+        } else if (stats) {
+            res.status(200).json({ 
+                success: true, 
+                message: `Selesai: ${stats.successCount} berjaya, ${stats.skippedCount} digugurkan. ${stats.errors.length > 0 ? '\nNota: ' + stats.errors.join(', ') : ''}`
+            });
+        } else {
+            res.status(500).json({ success: false, error: 'submitRPH tidak mengembalikan sebarang data (undefined result)' });
+        }
     } catch (error) {
         console.error('[Vercel API] Error in submit-rph:', error);
         res.status(500).json({ success: false, error: error.message, stack: error.stack });
