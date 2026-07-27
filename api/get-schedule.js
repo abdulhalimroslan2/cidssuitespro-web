@@ -16,12 +16,11 @@ function makeRequest(options, postData = null) {
     });
 }
 
-async function fetchScheduleFromAsie(username, password, clientIp) {
-    const effectiveIp = (clientIp && !clientIp.includes('127.0.0.1') && !clientIp.includes('::1'))
-        ? clientIp.split(',')[0].trim()
-        : '202.186.13.45';
+async function fetchScheduleFromAsie(username, password) {
+    // TM Net Unifi Broadband Malaysia Residential IP
+    const effectiveIp = '202.186.13.45';
 
-    console.log(`[get-schedule] Fetching schedule for user: ${username} (Effective IP: ${effectiveIp})`);
+    console.log(`[get-schedule] Fetching schedule for user: ${username}`);
 
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
     const commonHeaders = {
@@ -172,8 +171,7 @@ module.exports = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Credentials (username/password) are required' });
         }
 
-        const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress;
-        const result = await fetchScheduleFromAsie(username, password, clientIp);
+        const result = await fetchScheduleFromAsie(username, password);
         res.status(200).json(result);
 
     } catch (error) {

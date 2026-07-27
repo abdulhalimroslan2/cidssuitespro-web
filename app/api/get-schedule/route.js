@@ -31,11 +31,7 @@ export async function POST(request) {
             );
         }
 
-        const rawClientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
-        const effectiveIp = (rawClientIp && !rawClientIp.includes('127.0.0.1'))
-            ? rawClientIp.split(',')[0].trim()
-            : '202.186.13.45';
-
+        const effectiveIp = '202.186.13.45';
         const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
         const commonHeaders = {
             'User-Agent': userAgent,
