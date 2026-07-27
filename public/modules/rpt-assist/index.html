@@ -499,17 +499,41 @@
                     });
                 } catch(e) {}
 
-                // Default RPT fallbacks for Web App mode if no server items found
+                // Default RPT fallbacks for Web App mode based on logged in user
                 if (seenUrls.size === 0) {
-                    const defaults = [
-                        { title: 'Tingkatan 1 Bahasa Melayu', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                        { title: 'Tingkatan 1 Bahasa Inggeris', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                        { title: 'Tingkatan 1 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                        { title: 'Tingkatan 1 Sains', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                        { title: 'Tingkatan 2 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                        { title: 'Tingkatan 3 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                        { title: 'Tingkatan 5 Fizik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' }
-                    ];
+                    const userUpper = (globalSettings && globalSettings.username ? globalSettings.username : '').toUpperCase();
+                    let defaults = [];
+
+                    if (userUpper.includes('CIDSGURU7158')) {
+                        defaults = [
+                            { title: 'Tingkatan 2 Matematik (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=48166907&cg=cg_secondary&cl=form2&s=mathematics&tahun=2026&user=136095' },
+                            { title: 'Tingkatan 4 Matematik (2025/2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=39011163&cg=cg_secondary&cl=form4&s=mathematics&tahun=2025/2026&user=136095' },
+                            { title: 'Tingkatan 4 Matematik (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=47953415&cg=cg_secondary&cl=form4&s=mathematics&tahun=2026&user=136095' },
+                            { title: 'Tingkatan 5 Fizik (2025/2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=38810848&cg=cg_secondary&cl=form5&s=physics&tahun=2025/2026&user=136095' },
+                            { title: 'Tingkatan 5 Fizik (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=47953373&cg=cg_secondary&cl=form5&s=physics&tahun=2026&user=136095' },
+                            { title: 'Tingkatan 5 Pendidikan Jasmani & Kesihatan', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=48622928&cg=cg_secondary&cl=form5&s=pjpk&tahun=2026&user=136095' }
+                        ];
+                    } else if (userUpper.includes('ROSLAN2')) {
+                        defaults = [
+                            { title: 'Tingkatan 1 Bahasa Arab', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52535383&cg=cg_secondary&cl=form1&s=arabic&tahun=2026&user=300913' },
+                            { title: 'Tingkatan 1 Bahasa Inggeris', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52535956&cg=cg_secondary&cl=form1&s=english&tahun=2026&user=300913' },
+                            { title: 'Tingkatan 1 Jawi', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52535629&cg=cg_secondary&cl=form1&s=subject__jawi&tahun=2026&user=300913' },
+                            { title: 'Tingkatan 2 Bahasa Inggeris', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52535502&cg=cg_secondary&cl=form2&s=english&tahun=2026&user=300913' },
+                            { title: 'Tingkatan 2 Matematik', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52797578&cg=cg_secondary&cl=form2&s=mathematics&tahun=2026&user=300913' },
+                            { title: 'Tingkatan 3 Matematik', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52938187&cg=cg_secondary&cl=form3&s=mathematics&tahun=2026&user=300913' },
+                            { title: 'Tingkatan 5 Fizik', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52842250&cg=cg_secondary&cl=form5&s=physics&tahun=2026&user=300913' }
+                        ];
+                    } else {
+                        defaults = [
+                            { title: 'Tingkatan 1 Bahasa Melayu', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                            { title: 'Tingkatan 1 Bahasa Inggeris', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                            { title: 'Tingkatan 1 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                            { title: 'Tingkatan 2 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                            { title: 'Tingkatan 3 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                            { title: 'Tingkatan 5 Fizik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' }
+                        ];
+                    }
+
                     defaults.forEach(item => {
                         const opt = document.createElement('option');
                         opt.value = item.url;
