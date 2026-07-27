@@ -1,5 +1,5 @@
 // POST /api/get-rpt-list
-// Web App Proxy to fetch RPT list from asiemodel.net using 3-step session initialization flow
+// Web App Proxy to fetch RPT list from asiemodel.net with IP Forwarding (X-Forwarded-For / X-Real-IP)
 
 import https from 'https';
 
@@ -31,18 +31,28 @@ export async function POST(request) {
             );
         }
 
+        const rawClientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+        const effectiveIp = (rawClientIp && !rawClientIp.includes('127.0.0.1'))
+            ? rawClientIp.split(',')[0].trim()
+            : '202.186.13.45';
+
         const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-        // Step 1: Initial GET to obtain session cookie
+        const commonHeaders = {
+            'User-Agent': userAgent,
+            'X-Forwarded-For': effectiveIp,
+            'X-Real-IP': effectiveIp,
+            'Client-IP': effectiveIp,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9,ms;q=0.8'
+        };
+
+        // Step 1: Initial GET
         const initRes = await makeRequest({
             hostname: 'asiemodel.net',
             path: '/model/index.php',
             method: 'GET',
-            headers: {
-                'User-Agent': userAgent,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9,ms;q=0.8'
-            }
+            headers: commonHeaders
         });
 
         const initCookies = initRes.headers['set-cookie'] || [];
@@ -59,17 +69,16 @@ export async function POST(request) {
             submit: 'Login'
         }).toString();
 
-        // Step 2: POST login with initial session cookie
+        // Step 2: POST login WITH IP headers and session cookie
         const loginRes = await makeRequest({
             hostname: 'asiemodel.net',
             path: '/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
             method: 'POST',
             headers: {
+                ...commonHeaders,
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Content-Length': Buffer.byteLength(loginData),
                 'Cookie': initialPhpsessid ? 'PHPSESSID=' + initialPhpsessid : '',
-                'User-Agent': userAgent,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Origin': 'https://asiemodel.net',
                 'Referer': 'https://asiemodel.net/model/index.php'
             }
@@ -93,9 +102,8 @@ export async function POST(request) {
             path: '/model/search9.php?action=search_yearly',
             method: 'GET',
             headers: {
+                ...commonHeaders,
                 'Cookie': 'PHPSESSID=' + finalPhpsessid,
-                'User-Agent': userAgent,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Referer': 'https://asiemodel.net/model/main.php'
             }
         });

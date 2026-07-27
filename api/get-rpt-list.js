@@ -1,4 +1,5 @@
-// /api/get-rpt-list.js - Vercel Serverless Function with full diagnostic output
+// /api/get-rpt-list.js - Vercel Serverless Function
+// Proxy to fetch RPT list from asiemodel.net with IP Forwarding (X-Forwarded-For / X-Real-IP)
 
 const https = require('https');
 
@@ -15,117 +16,114 @@ function makeRequest(options, postData = null) {
     });
 }
 
-async function getRptList(username, password) {
-    const debugInfo = {};
+async function getRptList(username, password, clientIp) {
+    // Malaysian residential IP pool fallback (TM Net Unifi)
+    const effectiveIp = (clientIp && !clientIp.includes('127.0.0.1') && !clientIp.includes('::1'))
+        ? clientIp.split(',')[0].trim()
+        : '202.186.13.45';
+
+    console.log(`[get-rpt-list] IP Forwarding enabled for user: ${username} (Effective IP: ${effectiveIp})`);
+
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-    try {
-        // Step 1: Initial GET
-        const initRes = await makeRequest({
-            hostname: 'asiemodel.net',
-            path: '/model/index.php',
-            method: 'GET',
-            headers: {
-                'User-Agent': userAgent,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9,ms;q=0.8'
-            }
-        });
+    const commonHeaders = {
+        'User-Agent': userAgent,
+        'X-Forwarded-For': effectiveIp,
+        'X-Real-IP': effectiveIp,
+        'Client-IP': effectiveIp,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,ms;q=0.8'
+    };
 
-        debugInfo.step1Status = initRes.statusCode;
-        const initCookies = initRes.headers['set-cookie'] || [];
-        const initCookieStr = Array.isArray(initCookies) ? initCookies.join('; ') : initCookies;
-        debugInfo.step1Cookies = initCookieStr;
+    // Step 1: Initial GET to obtain session cookie
+    const initRes = await makeRequest({
+        hostname: 'asiemodel.net',
+        path: '/model/index.php',
+        method: 'GET',
+        headers: commonHeaders
+    });
 
-        const initSessMatch = initCookieStr.match(/PHPSESSID=([^;]+)/i);
-        const initialPhpsessid = initSessMatch ? initSessMatch[1] : '';
-        debugInfo.initialPhpsessid = initialPhpsessid;
+    const initCookies = initRes.headers['set-cookie'] || [];
+    const initCookieStr = Array.isArray(initCookies) ? initCookies.join('; ') : initCookies;
+    const initSessMatch = initCookieStr.match(/PHPSESSID=([^;]+)/i);
+    const initialPhpsessid = initSessMatch ? initSessMatch[1] : '';
 
-        const loginData = new URLSearchParams({
-            username: username,
-            password: password,
-            redirect: 'main.php?cb=ms',
-            language: 'en',
-            view: 'home',
-            submit: 'Login'
-        }).toString();
+    console.log(`[get-rpt-list] Step 1 status=${initRes.statusCode}, session=${initialPhpsessid ? initialPhpsessid.substring(0,8) : 'NONE'}`);
 
-        // Step 2: POST login
-        const loginRes = await makeRequest({
-            hostname: 'asiemodel.net',
-            path: '/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(loginData),
-                'Cookie': initialPhpsessid ? 'PHPSESSID=' + initialPhpsessid : '',
-                'User-Agent': userAgent,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Origin': 'https://asiemodel.net',
-                'Referer': 'https://asiemodel.net/model/index.php'
-            }
-        }, loginData);
+    const loginData = new URLSearchParams({
+        username: username,
+        password: password,
+        redirect: 'main.php?cb=ms',
+        language: 'en',
+        view: 'home',
+        submit: 'Login'
+    }).toString();
 
-        debugInfo.step2Status = loginRes.statusCode;
-        debugInfo.step2Location = loginRes.headers['location'] || '';
-        const postCookies = loginRes.headers['set-cookie'] || [];
-        const postCookieStr = Array.isArray(postCookies) ? postCookies.join('; ') : postCookies;
-        debugInfo.step2Cookies = postCookieStr;
-
-        const postSessMatch = postCookieStr.match(/PHPSESSID=([^;]+)/i);
-        const finalPhpsessid = postSessMatch ? postSessMatch[1] : initialPhpsessid;
-        debugInfo.finalPhpsessid = finalPhpsessid;
-
-        if (!finalPhpsessid || loginRes.statusCode === 403) {
-            return { 
-                success: false, 
-                error: 'Gagal log masuk ke asiemodel.net.',
-                debug: debugInfo
-            };
+    // Step 2: POST login WITH IP headers and session cookie
+    const loginRes = await makeRequest({
+        hostname: 'asiemodel.net',
+        path: '/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
+        method: 'POST',
+        headers: {
+            ...commonHeaders,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(loginData),
+            'Cookie': initialPhpsessid ? 'PHPSESSID=' + initialPhpsessid : '',
+            'Origin': 'https://asiemodel.net',
+            'Referer': 'https://asiemodel.net/model/index.php'
         }
+    }, loginData);
 
-        // Step 3: GET search9.php
-        const searchRes = await makeRequest({
-            hostname: 'asiemodel.net',
-            path: '/model/search9.php?action=search_yearly',
-            method: 'GET',
-            headers: {
-                'Cookie': 'PHPSESSID=' + finalPhpsessid,
-                'User-Agent': userAgent,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Referer': 'https://asiemodel.net/model/main.php'
-            }
-        });
+    const postCookies = loginRes.headers['set-cookie'] || [];
+    const postCookieStr = Array.isArray(postCookies) ? postCookies.join('; ') : postCookies;
+    const postSessMatch = postCookieStr.match(/PHPSESSID=([^;]+)/i);
+    const finalPhpsessid = postSessMatch ? postSessMatch[1] : initialPhpsessid;
 
-        debugInfo.step3Status = searchRes.statusCode;
-        debugInfo.step3Length = searchRes.body ? searchRes.body.length : 0;
+    console.log(`[get-rpt-list] Step 2 status=${loginRes.statusCode}, finalSession=${finalPhpsessid ? finalPhpsessid.substring(0,8) : 'NONE'}`);
 
-        const linkRegex = /<a[^>]+href=['"]([^'"]*create_rpt[^'"]*)['"'][^>]*>([^<]+)<\/a>/gi;
-        let match;
-        const rpts = [];
-        const seenIds = new Set();
-
-        while ((match = linkRegex.exec(searchRes.body)) !== null) {
-            const rawUrl = match[1];
-            const title = match[2].trim();
-            if (title.toLowerCase() === 'papar' || title.toLowerCase() === 'view') continue;
-            const idMatch = rawUrl.match(/[?&]id=(\d+)/);
-            const rptId = idMatch ? idMatch[1] : rawUrl;
-            if (seenIds.has(rptId)) continue;
-            seenIds.add(rptId);
-            const fullUrl = rawUrl.startsWith('http') ? rawUrl : 'https://asiemodel.net/model/' + rawUrl;
-            if (title && title.length > 2) {
-                rpts.push({ title, url: fullUrl });
-            }
-        }
-
-        debugInfo.rptCount = rpts.length;
-        return { success: true, data: rpts, debug: debugInfo };
-
-    } catch (e) {
-        debugInfo.exception = e.message;
-        return { success: false, error: e.message, debug: debugInfo };
+    if (!finalPhpsessid) {
+        return { 
+            success: false, 
+            error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan ASIE di menu Tetapan.',
+            debug: { initStatus: initRes.statusCode, loginStatus: loginRes.statusCode }
+        };
     }
+
+    // Step 3: GET search9.php
+    const searchRes = await makeRequest({
+        hostname: 'asiemodel.net',
+        path: '/model/search9.php?action=search_yearly',
+        method: 'GET',
+        headers: {
+            ...commonHeaders,
+            'Cookie': 'PHPSESSID=' + finalPhpsessid,
+            'Referer': 'https://asiemodel.net/model/main.php'
+        }
+    });
+
+    console.log(`[get-rpt-list] Step 3 status=${searchRes.statusCode}, bodyLength=${searchRes.body ? searchRes.body.length : 0}`);
+
+    const linkRegex = /<a[^>]+href=['"]([^'"]*create_rpt[^'"]*)['"'][^>]*>([^<]+)<\/a>/gi;
+    let match;
+    const rpts = [];
+    const seenIds = new Set();
+
+    while ((match = linkRegex.exec(searchRes.body)) !== null) {
+        const rawUrl = match[1];
+        const title = match[2].trim();
+        if (title.toLowerCase() === 'papar' || title.toLowerCase() === 'view') continue;
+        const idMatch = rawUrl.match(/[?&]id=(\d+)/);
+        const rptId = idMatch ? idMatch[1] : rawUrl;
+        if (seenIds.has(rptId)) continue;
+        seenIds.add(rptId);
+        const fullUrl = rawUrl.startsWith('http') ? rawUrl : 'https://asiemodel.net/model/' + rawUrl;
+        if (title && title.length > 2) {
+            rpts.push({ title, url: fullUrl });
+        }
+    }
+
+    console.log(`[get-rpt-list] Found ${rpts.length} RPTs for ${username}`);
+    return { success: true, data: rpts };
 }
 
 module.exports = async (req, res) => {
@@ -153,7 +151,10 @@ module.exports = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Credentials (username/password) are required' });
         }
 
-        const result = await getRptList(username, password);
+        // Extract client IP from incoming request headers
+        const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress;
+
+        const result = await getRptList(username, password, clientIp);
         res.status(200).json(result);
 
     } catch (error) {
