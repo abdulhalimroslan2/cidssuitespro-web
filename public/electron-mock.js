@@ -1923,8 +1923,50 @@ Arahan Tambahan:
 
             const Http = getHttp();
             if (!Http) {
-                if (window.electronAPI._deletionLogCb) window.electronAPI._deletionLogCb('Ralat: CapacitorHttp plugin tidak ditemui.');
-                if (window.electronAPI._deletionDoneCb) window.electronAPI._deletionDoneCb();
+                if (window.electronAPI._deletionLogCb) window.electronAPI._deletionLogCb('Sambungan Capacitor tidak ditemui. Beralih ke Web API (Vercel Proxy)...');
+                
+                try {
+                    const response = await fetch('/api/delete-rph', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: payload.username,
+                            password: payload.password,
+                            miwDate: payload.miwDate
+                        })
+                    });
+                    
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    while(true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        const chunk = decoder.decode(value, {stream: true});
+                        const lines = chunk.split('\n\n');
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.substring(6));
+                                    if (data.log && window.electronAPI._deletionLogCb) {
+                                        window.electronAPI._deletionLogCb(data.log);
+                                    }
+                                    if (data.error && window.electronAPI._deletionLogCb) {
+                                        window.electronAPI._deletionLogCb('✖ Ralat Web API: ' + data.error);
+                                        if (window.electronAPI._deletionDoneCb) window.electronAPI._deletionDoneCb();
+                                        return;
+                                    }
+                                    if (data.done && window.electronAPI._deletionDoneCb) {
+                                        window.electronAPI._deletionDoneCb();
+                                        return;
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                    }
+                } catch(fetchErr) {
+                    if (window.electronAPI._deletionLogCb) window.electronAPI._deletionLogCb('Ralat sambungan ke Web API: ' + fetchErr.message);
+                    if (window.electronAPI._deletionDoneCb) window.electronAPI._deletionDoneCb();
+                }
                 return;
             }
 
