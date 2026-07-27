@@ -19,27 +19,25 @@ async function getRptList(username, password) {
         redirect: 'manual'
     });
     
-    let setCookieHeader = [];
+    let rawSetCookie = '';
     if (res1.headers.getSetCookie) {
-        setCookieHeader = res1.headers.getSetCookie();
+        rawSetCookie = res1.headers.getSetCookie().join('; ');
     } else {
-        const raw = res1.headers.get('set-cookie');
-        if (raw) setCookieHeader = [raw];
+        rawSetCookie = res1.headers.get('set-cookie') || '';
     }
     
-    const cookies = {};
-    setCookieHeader.forEach(c => {
-        if (!c) return;
-        const parts = c.split(';')[0].split('=');
-        if (parts.length >= 2) cookies[parts[0].trim()] = parts[1].trim();
-    });
+    const sessMatch = rawSetCookie.match(/PHPSESSID=([^;]+)/i);
+    const phpsessid = sessMatch ? sessMatch[1] : '';
     
-    const cookieHeader = Object.entries(cookies).map(([k,v]) => `${k}=${v}`).join('; ');
-    
+    if (!phpsessid) {
+        console.error('No PHPSESSID cookie returned during login for user:', username);
+        return [];
+    }
+
     console.log('Fetching RPT search page (search9.php)...');
     const res2 = await fetch('https://asiemodel.net/model/search9.php?action=search_yearly', {
         headers: {
-            'Cookie': cookieHeader,
+            'Cookie': 'PHPSESSID=' + phpsessid,
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
         }
     });
