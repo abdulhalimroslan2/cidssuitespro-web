@@ -1869,10 +1869,32 @@ Arahan Tambahan:
                 return { success: true, schedule: rawResults };
             }
         } catch (e) {
-            console.error('Local Native Jadual Extraction failed:', e);
-            return { success: false, error: e.message };
+            console.log('CapacitorHttp fetchScheduleFromAsie failed, trying Web API proxy fallback:', e);
         }
-        return { success: false, error: 'Tiada jadual dijumpai' };
+
+        // Web App mode fallback: Call /api/get-schedule API proxy
+        try {
+            console.log('[fetchScheduleFromAsie] Calling /api/get-schedule proxy...');
+            const apiRes = await fetch('/api/get-schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credentials: { username, password } })
+            });
+
+            if (apiRes.ok) {
+                const json = await apiRes.json();
+                if (json.success && Array.isArray(json.schedule) && json.schedule.length > 0) {
+                    console.log(`[fetchScheduleFromAsie] Successfully extracted ${json.schedule.length} schedule items via API proxy`);
+                    return json;
+                } else if (json.error) {
+                    return { success: false, error: json.error };
+                }
+            }
+        } catch (apiErr) {
+            console.error('[fetchScheduleFromAsie] Web API Proxy error:', apiErr);
+        }
+
+        return { success: false, error: 'Tiada jadual dijumpai di akaun ASIE anda.' };
     },
     startDeletion: async (payload) => {
         try {
