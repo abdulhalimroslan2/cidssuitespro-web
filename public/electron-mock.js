@@ -330,22 +330,106 @@ window.electronAPI = {
             }
         }
 
-        // Browser Web App mode: Call /api/get-rpt-list API Proxy
+        // Browser Web App mode: Use hidden iframe to login & fetch RPT list
+        // Server proxy is blocked by ASIE (IP geo-blocking), so browser must do it directly
         try {
-            const apiRes = await fetch('/api/get-rpt-list', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ credentials: { username, password } })
+            console.log('[getRptList] Web App mode — using iframe-based RPT fetch...');
+            const rptList = await new Promise((resolve) => {
+                const timeoutId = setTimeout(() => {
+                    console.warn('[getRptList] iframe timeout — no RPT data received');
+                    cleanup();
+                    resolve([]);
+                }, 25000);
+
+                // Create hidden iframe to load ASIE login page
+                const iframe = document.createElement('iframe');
+                iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;border:none;';
+                iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-top-navigation');
+                document.body.appendChild(iframe);
+
+                let step = 0;
+
+                function cleanup() {
+                    clearTimeout(timeoutId);
+                    window.removeEventListener('message', onMessage);
+                    try { document.body.removeChild(iframe); } catch(e) {}
+                }
+
+                function onMessage(event) {
+                    if (event.data && event.data.type === 'asie-rpt-list') {
+                        cleanup();
+                        resolve(event.data.rpts || []);
+                    }
+                }
+                window.addEventListener('message', onMessage);
+
+                // Injector script to run inside iframe after each page load
+                iframe.onload = function() {
+                    step++;
+                    try {
+                        const doc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (!doc) return;
+
+                        if (step === 1) {
+                            // Step 1: Submit login form
+                            const loginUrl = 'https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms';
+                            doc.open();
+                            doc.write(`<form id="lf" method="POST" action="${loginUrl}">
+                                <input name="username" value="${username.replace(/"/g,'')}">
+                                <input name="password" value="${password.replace(/"/g,'')}">
+                                <input name="redirect" value="main.php?cb=ms">
+                                <input name="language" value="en">
+                                <input name="view" value="home">
+                                <input name="submit" value="Login">
+                            </form><script>document.getElementById('lf').submit();<\/script>`);
+                            doc.close();
+                        } else if (step === 2) {
+                            // Step 2: Logged in (main page). Now navigate to RPT list
+                            const url = doc.location ? doc.location.href : '';
+                            if (url.includes('index.php') && !url.includes('main')) {
+                                // Login failed — still on login page
+                                cleanup();
+                                resolve([]);
+                                return;
+                            }
+                            iframe.src = 'https://asiemodel.net/model/search9.php?action=search_yearly';
+                        } else if (step >= 3) {
+                            // Step 3: Extract RPT links from page
+                            try {
+                                const links = Array.from(doc.querySelectorAll('a[href*="create_rpt"]'));
+                                const seenIds = new Set();
+                                const rpts = [];
+                                links.forEach(a => {
+                                    const title = (a.textContent || '').trim();
+                                    if (!title || title.toLowerCase() === 'papar') return;
+                                    const href = a.getAttribute('href') || '';
+                                    const idMatch = href.match(/[?&]id=(\d+)/);
+                                    const rptId = idMatch ? idMatch[1] : href;
+                                    if (seenIds.has(rptId)) return;
+                                    seenIds.add(rptId);
+                                    const fullUrl = href.startsWith('http') ? href : 'https://asiemodel.net/model/' + href;
+                                    if (title.length > 2) rpts.push({ title, url: fullUrl });
+                                });
+                                console.log(`[getRptList] iframe extracted ${rpts.length} RPTs`);
+                                window.postMessage({ type: 'asie-rpt-list', rpts }, '*');
+                            } catch(domErr) {
+                                console.error('[getRptList] DOM access error:', domErr);
+                                cleanup();
+                                resolve([]);
+                            }
+                        }
+                    } catch(frameErr) {
+                        console.error('[getRptList] iframe step error:', frameErr);
+                    }
+                };
+
+                // Load a blank page first to initialize iframe
+                iframe.src = 'about:blank';
             });
 
-            if (apiRes.ok) {
-                const json = await apiRes.json();
-                if (json.success && Array.isArray(json.data)) {
-                    return json.data;
-                }
-            }
+            if (rptList.length > 0) return rptList;
         } catch (e) {
-            console.error('getRptList Web API Error:', e);
+            console.error('[getRptList] iframe approach error:', e);
         }
         return [];
     },
