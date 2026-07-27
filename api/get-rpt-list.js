@@ -1,110 +1,89 @@
 // /api/get-rpt-list.js - Vercel Serverless Function
-// Fetch RPT list from asiemodel.net via server-side proxy
+// Fetch RPT list from asiemodel.net using native Node https module
+
+const https = require('https');
+
+function makeRequest(options, postData = null) {
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => resolve({ statusCode: res.statusCode, headers: res.headers, body }));
+        });
+        req.on('error', reject);
+        if (postData) req.write(postData);
+        req.end();
+    });
+}
 
 async function getRptList(username, password) {
-    console.log(`[get-rpt-list] Logging in for user: ${username}`);
+    console.log(`[get-rpt-list] Logging in via https module for user: ${username}`);
 
-    const loginBody = new URLSearchParams({
+    const loginData = new URLSearchParams({
         username: username,
         password: password,
         redirect: 'main.php?cb=ms',
         language: 'en',
         view: 'home',
         submit: 'Login'
-    });
+    }).toString();
 
-    // Mimic a real browser as closely as possible to avoid ASIE blocking
-    const browserHeaders = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'ms-MY,ms;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'max-age=0',
-        'Origin': 'https://asiemodel.net',
-        'Referer': 'https://asiemodel.net/model/index.php',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Fetch-User': '?1',
-        'Upgrade-Insecure-Requests': '1',
-        'Connection': 'keep-alive'
-    };
-
-    const loginRes = await fetch('https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms', {
+    const loginRes = await makeRequest({
+        hostname: 'asiemodel.net',
+        path: '/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
         method: 'POST',
-        headers: browserHeaders,
-        body: loginBody.toString(),
-        redirect: 'manual'
-    });
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(loginData),
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Origin': 'https://asiemodel.net',
+            'Referer': 'https://asiemodel.net/model/index.php'
+        }
+    }, loginData);
 
-    console.log(`[get-rpt-list] Login response status: ${loginRes.status}`);
-
-    // Extract PHPSESSID from set-cookie header
-    let rawSetCookie = '';
-    if (loginRes.headers.getSetCookie) {
-        const cookies = loginRes.headers.getSetCookie();
-        rawSetCookie = cookies.join('; ');
-        console.log(`[get-rpt-list] Cookies received: ${cookies.length}`);
-    } else {
-        rawSetCookie = loginRes.headers.get('set-cookie') || '';
-    }
-
-    console.log(`[get-rpt-list] Raw set-cookie snippet: ${rawSetCookie.substring(0, 100)}`);
-
-    const sessMatch = rawSetCookie.match(/PHPSESSID=([^;,\s]+)/i);
+    const setCookieHeader = loginRes.headers['set-cookie'] || [];
+    const cookieStr = Array.isArray(setCookieHeader) ? setCookieHeader.join('; ') : setCookieHeader;
+    const sessMatch = cookieStr.match(/PHPSESSID=([^;]+)/i);
     const phpsessid = sessMatch ? sessMatch[1] : '';
 
     if (!phpsessid) {
-        // Try getting PHPSESSID from Location header redirect cookie
-        const locationHdr = loginRes.headers.get('location') || '';
-        console.error(`[get-rpt-list] No PHPSESSID. Status=${loginRes.status} Location=${locationHdr}`);
+        console.error(`[get-rpt-list] No PHPSESSID returned. Status=${loginRes.statusCode}`);
         return { 
             success: false, 
             error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan ASIE di menu Tetapan.',
-            debug: { status: loginRes.status, location: locationHdr, cookie: rawSetCookie.substring(0, 200) }
+            debug: { status: loginRes.statusCode, cookies: cookieStr.substring(0, 100) }
         };
     }
 
-    console.log(`[get-rpt-list] PHPSESSID obtained: ${phpsessid.substring(0,10)}...`);
+    console.log(`[get-rpt-list] PHPSESSID obtained. Fetching search9.php...`);
 
-    const searchRes = await fetch('https://asiemodel.net/model/search9.php?action=search_yearly', {
+    const searchRes = await makeRequest({
+        hostname: 'asiemodel.net',
+        path: '/model/search9.php?action=search_yearly',
+        method: 'GET',
         headers: {
             'Cookie': 'PHPSESSID=' + phpsessid,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'ms-MY,ms;q=0.9,en;q=0.8',
-            'Referer': 'https://asiemodel.net/model/main.php',
+            'Referer': 'https://asiemodel.net/model/main.php'
         }
     });
 
-    const html = await searchRes.text();
-    console.log(`[get-rpt-list] search9.php response length: ${html.length}`);
-
+    const linkRegex = /<a[^>]+href=['"]([^'"]*create_rpt[^'"]*)['"'][^>]*>([^<]+)<\/a>/gi;
+    let match;
     const rpts = [];
     const seenIds = new Set();
 
-    // ASIE Model uses single-quoted href: href='rpt9.php?action=create_rpt&id=...'
-    const linkRegex = /<a[^>]+href=['"]([^'"]*create_rpt[^'"]*)['"'][^>]*>([^<]+)<\/a>/gi;
-    let match;
-
-    while ((match = linkRegex.exec(html)) !== null) {
+    while ((match = linkRegex.exec(searchRes.body)) !== null) {
         const rawUrl = match[1];
         const title = match[2].trim();
-
-        // Skip "Papar" duplicate links
         if (title.toLowerCase() === 'papar' || title.toLowerCase() === 'view') continue;
-
-        // Deduplicate by RPT ID
         const idMatch = rawUrl.match(/[?&]id=(\d+)/);
         const rptId = idMatch ? idMatch[1] : rawUrl;
         if (seenIds.has(rptId)) continue;
         seenIds.add(rptId);
-
-        const fullUrl = rawUrl.startsWith('http')
-            ? rawUrl
-            : 'https://asiemodel.net/model/' + rawUrl;
-
+        const fullUrl = rawUrl.startsWith('http') ? rawUrl : 'https://asiemodel.net/model/' + rawUrl;
         if (title && title.length > 2) {
             rpts.push({ title, url: fullUrl });
         }
@@ -115,7 +94,6 @@ async function getRptList(username, password) {
 }
 
 module.exports = async (req, res) => {
-    // CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -132,19 +110,15 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { credentials } = req.body;
+        const { credentials, username: bodyUser, password: bodyPass } = req.body || {};
+        const username = credentials?.username || bodyUser;
+        const password = credentials?.password || bodyPass;
 
-        if (!credentials || !credentials.username || !credentials.password) {
+        if (!username || !password) {
             return res.status(400).json({ success: false, error: 'Credentials (username/password) are required' });
         }
 
-        const result = await getRptList(credentials.username, credentials.password);
-
-        if (!result.success) {
-            // Return 200 with error info (not 401) so client sees debug info
-            return res.status(200).json(result);
-        }
-
+        const result = await getRptList(username, password);
         res.status(200).json(result);
 
     } catch (error) {

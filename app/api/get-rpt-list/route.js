@@ -1,9 +1,25 @@
 // POST /api/get-rpt-list
-// Web App Proxy to fetch RPT list from asiemodel.net
+// Web App Proxy to fetch RPT list from asiemodel.net using native Node https module
+
+import https from 'https';
+
+function makeRequest(options, postData = null) {
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => resolve({ statusCode: res.statusCode, headers: res.headers, body }));
+        });
+        req.on('error', reject);
+        if (postData) req.write(postData);
+        req.end();
+    });
+}
+
 export async function POST(request) {
     try {
         const body = await request.json();
-        const { credentials, username: bodyUser, password: bodyPass } = body;
+        const { credentials, username: bodyUser, password: bodyPass } = body || {};
         
         const username = credentials?.username || bodyUser;
         const password = credentials?.password || bodyPass;
@@ -15,95 +31,82 @@ export async function POST(request) {
             );
         }
 
-        console.log(`[get-rpt-list] Logging in to asiemodel.net for user: ${username}`);
+        console.log(`[get-rpt-list Route] Logging in via https module for user: ${username}`);
 
-        const loginBody = new URLSearchParams({
+        const loginData = new URLSearchParams({
             username: username,
             password: password,
             redirect: 'main.php?cb=ms',
             language: 'en',
             view: 'home',
             submit: 'Login'
-        });
-        
-        const loginRes = await fetch('https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms', {
+        }).toString();
+
+        const loginRes = await makeRequest({
+            hostname: 'asiemodel.net',
+            path: '/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            },
-            body: loginBody.toString(),
-            redirect: 'manual'
-        });
-        
-        let rawSetCookie = '';
-        if (loginRes.headers.getSetCookie) {
-            rawSetCookie = loginRes.headers.getSetCookie().join('; ');
-        } else {
-            rawSetCookie = loginRes.headers.get('set-cookie') || '';
-        }
-        
-        const sessMatch = rawSetCookie.match(/PHPSESSID=([^;]+)/i);
+                'Content-Length': Buffer.byteLength(loginData),
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Origin': 'https://asiemodel.net',
+                'Referer': 'https://asiemodel.net/model/index.php'
+            }
+        }, loginData);
+
+        const setCookieHeader = loginRes.headers['set-cookie'] || [];
+        const cookieStr = Array.isArray(setCookieHeader) ? setCookieHeader.join('; ') : setCookieHeader;
+        const sessMatch = cookieStr.match(/PHPSESSID=([^;]+)/i);
         const phpsessid = sessMatch ? sessMatch[1] : '';
-        
+
         if (!phpsessid) {
-            console.error('[get-rpt-list] No PHPSESSID returned during login');
+            console.error(`[get-rpt-list Route] No PHPSESSID returned. Status=${loginRes.statusCode}`);
             return Response.json({
                 success: false,
                 error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan di Tetapan.'
             }, { status: 401 });
         }
 
-        console.log('[get-rpt-list] Fetching RPT list from search9.php...');
-        const searchRes = await fetch('https://asiemodel.net/model/search9.php?action=search_yearly', {
+        console.log(`[get-rpt-list Route] PHPSESSID obtained. Fetching search9.php...`);
+
+        const searchRes = await makeRequest({
+            hostname: 'asiemodel.net',
+            path: '/model/search9.php?action=search_yearly',
+            method: 'GET',
             headers: {
                 'Cookie': 'PHPSESSID=' + phpsessid,
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Referer': 'https://asiemodel.net/model/main.php'
             }
         });
-        
-        const html = await searchRes.text();
-        const rpts = [];
-        const seenIds = new Set();
-        
-        // ASIE Model uses single quotes: href='rpt9.php?action=create_rpt&id=...'
-        // Pattern: <a href='rpt9.php?action=create_rpt&id=XXXX...'>Title Text</a>
-        // We use a regex that captures BOTH single and double quoted href values
+
         const linkRegex = /<a[^>]+href=['"]([^'"]*create_rpt[^'"]*)['"'][^>]*>([^<]+)<\/a>/gi;
         let match;
-        
-        while ((match = linkRegex.exec(html)) !== null) {
+        const rpts = [];
+        const seenIds = new Set();
+
+        while ((match = linkRegex.exec(searchRes.body)) !== null) {
             const rawUrl = match[1];
             const title = match[2].trim();
-            
-            // Skip "Papar" links (they duplicate the named link)
             if (title.toLowerCase() === 'papar' || title.toLowerCase() === 'view') continue;
-            
-            // Extract RPT ID to deduplicate
             const idMatch = rawUrl.match(/[?&]id=(\d+)/);
             const rptId = idMatch ? idMatch[1] : rawUrl;
-            
             if (seenIds.has(rptId)) continue;
             seenIds.add(rptId);
-            
-            const fullUrl = rawUrl.startsWith('http') 
-                ? rawUrl 
-                : 'https://asiemodel.net/model/' + rawUrl;
-            
-            // Only include entries with a meaningful title
+            const fullUrl = rawUrl.startsWith('http') ? rawUrl : 'https://asiemodel.net/model/' + rawUrl;
             if (title && title.length > 2) {
-                rpts.push({
-                    title: title,
-                    url: fullUrl
-                });
+                rpts.push({ title, url: fullUrl });
             }
         }
 
-        console.log(`[get-rpt-list] Found ${rpts.length} RPT items for ${username}`);
+        console.log(`[get-rpt-list Route] Found ${rpts.length} RPTs for ${username}`);
         return Response.json({ success: true, data: rpts });
 
     } catch (error) {
-        console.error('[get-rpt-list] Error:', error);
+        console.error('[get-rpt-list Route] Error:', error);
         return Response.json({
             success: false,
             error: 'Ralat pelayan: ' + error.message
