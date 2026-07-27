@@ -1,5 +1,5 @@
 // /api/get-rpt-list.js - Vercel Serverless Function
-// Fetch RPT list from asiemodel.net using native Node https module
+// Fetch RPT list from asiemodel.net using native Node https module with 3-step session flow
 
 const https = require('https');
 
@@ -17,7 +17,28 @@ function makeRequest(options, postData = null) {
 }
 
 async function getRptList(username, password) {
-    console.log(`[get-rpt-list] Logging in via https module for user: ${username}`);
+    console.log(`[get-rpt-list] 1/3: GET index.php to receive initial session cookie for user: ${username}`);
+
+    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+    // Step 1: Initial GET to obtain session cookie (prevents Cloudflare WAF 403 on raw POST)
+    const initRes = await makeRequest({
+        hostname: 'asiemodel.net',
+        path: '/model/index.php',
+        method: 'GET',
+        headers: {
+            'User-Agent': userAgent,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9,ms;q=0.8'
+        }
+    });
+
+    const initCookies = initRes.headers['set-cookie'] || [];
+    const initCookieStr = Array.isArray(initCookies) ? initCookies.join('; ') : initCookies;
+    const initSessMatch = initCookieStr.match(/PHPSESSID=([^;]+)/i);
+    const initialPhpsessid = initSessMatch ? initSessMatch[1] : '';
+
+    console.log(`[get-rpt-list] Init status=${initRes.statusCode}, session=${initialPhpsessid ? initialPhpsessid.substring(0,8) : 'NONE'}`);
 
     const loginData = new URLSearchParams({
         username: username,
@@ -28,6 +49,8 @@ async function getRptList(username, password) {
         submit: 'Login'
     }).toString();
 
+    // Step 2: POST login data WITH the initial PHPSESSID cookie
+    console.log(`[get-rpt-list] 2/3: POST login with initial session...`);
     const loginRes = await makeRequest({
         hostname: 'asiemodel.net',
         path: '/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
@@ -35,36 +58,36 @@ async function getRptList(username, password) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Content-Length': Buffer.byteLength(loginData),
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Cookie': initialPhpsessid ? 'PHPSESSID=' + initialPhpsessid : '',
+            'User-Agent': userAgent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Origin': 'https://asiemodel.net',
             'Referer': 'https://asiemodel.net/model/index.php'
         }
     }, loginData);
 
-    const setCookieHeader = loginRes.headers['set-cookie'] || [];
-    const cookieStr = Array.isArray(setCookieHeader) ? setCookieHeader.join('; ') : setCookieHeader;
-    const sessMatch = cookieStr.match(/PHPSESSID=([^;]+)/i);
-    const phpsessid = sessMatch ? sessMatch[1] : '';
+    const postCookies = loginRes.headers['set-cookie'] || [];
+    const postCookieStr = Array.isArray(postCookies) ? postCookies.join('; ') : postCookies;
+    const postSessMatch = postCookieStr.match(/PHPSESSID=([^;]+)/i);
+    const finalPhpsessid = postSessMatch ? postSessMatch[1] : initialPhpsessid;
 
-    if (!phpsessid) {
+    if (!finalPhpsessid) {
         console.error(`[get-rpt-list] No PHPSESSID returned. Status=${loginRes.statusCode}`);
         return { 
             success: false, 
-            error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan ASIE di menu Tetapan.',
-            debug: { status: loginRes.statusCode, cookies: cookieStr.substring(0, 100) }
+            error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan ASIE di menu Tetapan.'
         };
     }
 
-    console.log(`[get-rpt-list] PHPSESSID obtained. Fetching search9.php...`);
-
+    // Step 3: GET RPT list from search9.php
+    console.log(`[get-rpt-list] 3/3: GET search9.php with authenticated session...`);
     const searchRes = await makeRequest({
         hostname: 'asiemodel.net',
         path: '/model/search9.php?action=search_yearly',
         method: 'GET',
         headers: {
-            'Cookie': 'PHPSESSID=' + phpsessid,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Cookie': 'PHPSESSID=' + finalPhpsessid,
+            'User-Agent': userAgent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Referer': 'https://asiemodel.net/model/main.php'
         }

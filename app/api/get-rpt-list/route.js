@@ -1,5 +1,5 @@
 // POST /api/get-rpt-list
-// Web App Proxy to fetch RPT list from asiemodel.net using native Node https module
+// Web App Proxy to fetch RPT list from asiemodel.net using 3-step session initialization flow
 
 import https from 'https';
 
@@ -31,7 +31,24 @@ export async function POST(request) {
             );
         }
 
-        console.log(`[get-rpt-list Route] Logging in via https module for user: ${username}`);
+        const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+        // Step 1: Initial GET to obtain session cookie
+        const initRes = await makeRequest({
+            hostname: 'asiemodel.net',
+            path: '/model/index.php',
+            method: 'GET',
+            headers: {
+                'User-Agent': userAgent,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9,ms;q=0.8'
+            }
+        });
+
+        const initCookies = initRes.headers['set-cookie'] || [];
+        const initCookieStr = Array.isArray(initCookies) ? initCookies.join('; ') : initCookies;
+        const initSessMatch = initCookieStr.match(/PHPSESSID=([^;]+)/i);
+        const initialPhpsessid = initSessMatch ? initSessMatch[1] : '';
 
         const loginData = new URLSearchParams({
             username: username,
@@ -42,6 +59,7 @@ export async function POST(request) {
             submit: 'Login'
         }).toString();
 
+        // Step 2: POST login with initial session cookie
         const loginRes = await makeRequest({
             hostname: 'asiemodel.net',
             path: '/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
@@ -49,35 +67,34 @@ export async function POST(request) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Content-Length': Buffer.byteLength(loginData),
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Cookie': initialPhpsessid ? 'PHPSESSID=' + initialPhpsessid : '',
+                'User-Agent': userAgent,
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Origin': 'https://asiemodel.net',
                 'Referer': 'https://asiemodel.net/model/index.php'
             }
         }, loginData);
 
-        const setCookieHeader = loginRes.headers['set-cookie'] || [];
-        const cookieStr = Array.isArray(setCookieHeader) ? setCookieHeader.join('; ') : setCookieHeader;
-        const sessMatch = cookieStr.match(/PHPSESSID=([^;]+)/i);
-        const phpsessid = sessMatch ? sessMatch[1] : '';
+        const postCookies = loginRes.headers['set-cookie'] || [];
+        const postCookieStr = Array.isArray(postCookies) ? postCookies.join('; ') : postCookies;
+        const postSessMatch = postCookieStr.match(/PHPSESSID=([^;]+)/i);
+        const finalPhpsessid = postSessMatch ? postSessMatch[1] : initialPhpsessid;
 
-        if (!phpsessid) {
-            console.error(`[get-rpt-list Route] No PHPSESSID returned. Status=${loginRes.statusCode}`);
+        if (!finalPhpsessid) {
             return Response.json({
                 success: false,
                 error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan di Tetapan.'
             }, { status: 401 });
         }
 
-        console.log(`[get-rpt-list Route] PHPSESSID obtained. Fetching search9.php...`);
-
+        // Step 3: GET search9.php
         const searchRes = await makeRequest({
             hostname: 'asiemodel.net',
             path: '/model/search9.php?action=search_yearly',
             method: 'GET',
             headers: {
-                'Cookie': 'PHPSESSID=' + phpsessid,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Cookie': 'PHPSESSID=' + finalPhpsessid,
+                'User-Agent': userAgent,
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Referer': 'https://asiemodel.net/model/main.php'
             }
@@ -102,7 +119,6 @@ export async function POST(request) {
             }
         }
 
-        console.log(`[get-rpt-list Route] Found ${rpts.length} RPTs for ${username}`);
         return Response.json({ success: true, data: rpts });
 
     } catch (error) {
