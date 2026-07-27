@@ -16,16 +16,11 @@ function makeRequest(options, postData = null) {
     });
 }
 
-async function getRptList(username, password, clientIp) {
-    // Malaysian residential IP pool fallback (TM Net Unifi)
-    const effectiveIp = (clientIp && !clientIp.includes('127.0.0.1') && !clientIp.includes('::1'))
-        ? clientIp.split(',')[0].trim()
-        : '202.186.13.45';
-
-    console.log(`[get-rpt-list] IP Forwarding enabled for user: ${username} (Effective IP: ${effectiveIp})`);
+async function getRptList(username, password) {
+    const effectiveIp = '202.186.13.45';
+    console.log(`[get-rpt-list] IP Forwarding enabled for user: ${username}`);
 
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
-
     const commonHeaders = {
         'User-Agent': userAgent,
         'X-Forwarded-For': effectiveIp,
@@ -47,8 +42,6 @@ async function getRptList(username, password, clientIp) {
     const initCookieStr = Array.isArray(initCookies) ? initCookies.join('; ') : initCookies;
     const initSessMatch = initCookieStr.match(/PHPSESSID=([^;]+)/i);
     const initialPhpsessid = initSessMatch ? initSessMatch[1] : '';
-
-    console.log(`[get-rpt-list] Step 1 status=${initRes.statusCode}, session=${initialPhpsessid ? initialPhpsessid.substring(0,8) : 'NONE'}`);
 
     const loginData = new URLSearchParams({
         username: username,
@@ -79,13 +72,15 @@ async function getRptList(username, password, clientIp) {
     const postSessMatch = postCookieStr.match(/PHPSESSID=([^;]+)/i);
     const finalPhpsessid = postSessMatch ? postSessMatch[1] : initialPhpsessid;
 
-    console.log(`[get-rpt-list] Step 2 status=${loginRes.statusCode}, finalSession=${finalPhpsessid ? finalPhpsessid.substring(0,8) : 'NONE'}`);
+    const locationHeader = loginRes.headers['location'] || '';
+    const loginSuccess = loginRes.statusCode === 302 || locationHeader.includes('main.php');
 
-    if (!finalPhpsessid) {
+    console.log(`[get-rpt-list] Step 2 loginSuccess=${loginSuccess}, status=${loginRes.statusCode}, location=${locationHeader}`);
+
+    if (!finalPhpsessid || !loginSuccess) {
         return { 
             success: false, 
-            error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan ASIE di menu Tetapan.',
-            debug: { initStatus: initRes.statusCode, loginStatus: loginRes.statusCode }
+            error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan ASIE di menu Tetapan.'
         };
     }
 
@@ -100,8 +95,6 @@ async function getRptList(username, password, clientIp) {
             'Referer': 'https://asiemodel.net/model/main.php'
         }
     });
-
-    console.log(`[get-rpt-list] Step 3 status=${searchRes.statusCode}, bodyLength=${searchRes.body ? searchRes.body.length : 0}`);
 
     const linkRegex = /<a[^>]+href=['"]([^'"]*create_rpt[^'"]*)['"'][^>]*>([^<]+)<\/a>/gi;
     let match;
@@ -151,10 +144,7 @@ module.exports = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Credentials (username/password) are required' });
         }
 
-        // Extract client IP from incoming request headers
-        const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress;
-
-        const result = await getRptList(username, password, clientIp);
+        const result = await getRptList(username, password);
         res.status(200).json(result);
 
     } catch (error) {

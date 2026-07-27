@@ -17,9 +17,7 @@ function makeRequest(options, postData = null) {
 }
 
 async function fetchScheduleFromAsie(username, password) {
-    // TM Net Unifi Broadband Malaysia Residential IP
     const effectiveIp = '202.186.13.45';
-
     console.log(`[get-schedule] Fetching schedule for user: ${username}`);
 
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -74,7 +72,12 @@ async function fetchScheduleFromAsie(username, password) {
     const postSessMatch = postCookieStr.match(/PHPSESSID=([^;]+)/i);
     const finalPhpsessid = postSessMatch ? postSessMatch[1] : initialPhpsessid;
 
-    if (!finalPhpsessid) {
+    const locationHeader = loginRes.headers['location'] || '';
+    const loginSuccess = loginRes.statusCode === 302 || locationHeader.includes('main.php');
+
+    console.log(`[get-schedule] Step 2 loginSuccess=${loginSuccess}, status=${loginRes.statusCode}, location=${locationHeader}`);
+
+    if (!finalPhpsessid || !loginSuccess) {
         return { success: false, error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan.' };
     }
 
@@ -99,7 +102,8 @@ async function fetchScheduleFromAsie(username, password) {
         'biology': 'Biologi', 'science': 'Sains', 'arabic': 'Bahasa Arab',
         'english': 'Bahasa Inggeris', 'malay': 'Bahasa Melayu',
         'history': 'Sejarah', 'geography': 'Geografi',
-        'islamic_studies': 'Pendidikan Islam', 'moral': 'Pendidikan Moral'
+        'islamic_studies': 'Pendidikan Islam', 'moral': 'Pendidikan Moral',
+        'pjpk': 'PJPK'
     };
 
     lineBlocks.forEach((block) => {
@@ -116,7 +120,7 @@ async function fetchScheduleFromAsie(username, password) {
             const subjMatch = block.match(/name="subject\[\d+\]"[^>]*value="([^"]+)"/i) || block.match(/name="subject\[\d+\]"[^>]*>([^<]+)/i);
             if (subjMatch) {
                 const rawSubj = subjMatch[1].trim();
-                subject = subjectMap[rawSubj] || rawSubj;
+                subject = subjectMap[rawSubj.toLowerCase()] || rawSubj;
             }
 
             let startTime = "";

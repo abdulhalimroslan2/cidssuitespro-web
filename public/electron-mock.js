@@ -53,6 +53,22 @@ window.electronAPI = {
             if (typeof top !== 'undefined' && typeof top.updateSystemStatus === 'function') top.updateSystemStatus();
             else if (window.parent && typeof window.parent.updateSystemStatus === 'function') window.parent.updateSystemStatus();
         } catch(e) {}
+        
+        // Notify parent and frames to clear old user's RPT cache and fetch fresh list
+        try {
+            window.postMessage({ type: 'clear-rpt-cache' }, '*');
+            if (window.parent) window.parent.postMessage({ type: 'clear-rpt-cache' }, '*');
+        } catch(e) {}
+
+        // Fetch fresh RPT list for new username asynchronously
+        setTimeout(() => {
+            window.electronAPI.getRptList().then(newList => {
+                if (window.electronAPI._rptListCallbacks) {
+                    window.electronAPI._rptListCallbacks.forEach(cb => cb(newList));
+                }
+            });
+        }, 100);
+
         return { success: true };
     },
     checkSystemStatus: async () => {
@@ -229,7 +245,12 @@ window.electronAPI = {
     reloadApp: async () => {
         window.location.reload();
     },
+    _rptListCallbacks: [],
     onRptList: (callback) => { 
+        if (typeof callback === 'function') {
+            if (!window.electronAPI._rptListCallbacks) window.electronAPI._rptListCallbacks = [];
+            window.electronAPI._rptListCallbacks.push(callback);
+        }
         window.electronAPI.getRptList().then(list => callback(list));
     },
     hideRptView: () => {},

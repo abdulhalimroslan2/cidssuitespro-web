@@ -21,6 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Clear cache when user updates credentials in Settings
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'clear-rpt-cache') {
+            console.log('[renderer] Clearing cached RPT list due to settings update');
+            cachedRptList = null;
+        }
+    });
+
     // Whenever the iframe finishes loading, push cached list if on RPT Assist
     moduleFrame.addEventListener('load', () => {
         const src = moduleFrame.getAttribute('src') || '';

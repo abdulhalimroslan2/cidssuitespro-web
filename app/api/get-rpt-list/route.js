@@ -31,11 +31,7 @@ export async function POST(request) {
             );
         }
 
-        const rawClientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
-        const effectiveIp = (rawClientIp && !rawClientIp.includes('127.0.0.1'))
-            ? rawClientIp.split(',')[0].trim()
-            : '202.186.13.45';
-
+        const effectiveIp = '202.186.13.45';
         const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
         const commonHeaders = {
@@ -89,7 +85,10 @@ export async function POST(request) {
         const postSessMatch = postCookieStr.match(/PHPSESSID=([^;]+)/i);
         const finalPhpsessid = postSessMatch ? postSessMatch[1] : initialPhpsessid;
 
-        if (!finalPhpsessid) {
+        const locationHeader = loginRes.headers['location'] || '';
+        const loginSuccess = loginRes.statusCode === 302 || locationHeader.includes('main.php');
+
+        if (!finalPhpsessid || !loginSuccess) {
             return Response.json({
                 success: false,
                 error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan di Tetapan.'
