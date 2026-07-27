@@ -243,91 +243,109 @@ window.electronAPI = {
             return [];
         }
 
-        try {
-            const Http = getHttp();
-            if (!Http) return [];
-
-            const cookieMap = {};
-            const getHeaders = (extra = {}) => {
-                const cookieStr = Object.entries(cookieMap).map(([k, v]) => `${k}=${v}`).join('; ');
-                return { 'User-Agent': 'Mozilla/5.0 (Android; Mobile)', 'Cookie': cookieStr, ...extra };
-            };
-            const updateCookies = (res) => {
-                const setCookie = res.headers ? (res.headers['set-cookie'] || res.headers['Set-Cookie']) : null;
-                if (setCookie) {
-                    const cookieArr = Array.isArray(setCookie) ? setCookie : [setCookie];
-                    cookieArr.forEach(c => {
-                        const [k, v] = c.split(';')[0].split('=');
-                        if (k && v) cookieMap[k.trim()] = v.trim();
-                    });
-                }
-            };
-
-            // 1. Log masuk ke ASIE Model
-            const loginRes = await Http.post({
-                url: 'https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0' },
-                data: new URLSearchParams({
-                    username: username,
-                    password: password,
-                    redirect: 'main.php?cb=ms',
-                    language: 'en',
-                    view: 'home',
-                    submit: 'Login'
-                }).toString()
-            });
-            updateCookies(loginRes);
-
-            // 2. Ambil senarai RPT dengan Cookie Header
-            const rptRes = await Http.get({
-                url: 'https://asiemodel.net/model/search9.php?action=search_yearly',
-                headers: getHeaders()
-            });
-
-            const html = rptRes.data || '';
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-
-            let links = Array.from(doc.querySelectorAll('.row_content table tbody tr td a[href^="rpt9.php?action=create_rpt"]'));
-            if (links.length === 0) {
-                let all = Array.from(doc.querySelectorAll('a'));
-                links = all.filter(a => a.href.includes('rpt9.php?action=create_rpt') || a.href.includes('rpt.php?action=create_rpt'));
-            }
-
-            if (links.length > 0) {
-                let results = links.map(a => {
-                    let title = a.innerText.trim();
-                    let resolvedUrl = a.getAttribute('href') || a.href || '';
-
-                    const match = resolvedUrl.match(/(rpt[9]?\.php.*)/);
-                    if (match) {
-                        resolvedUrl = 'https://asiemodel.net/model/' + match[1];
-                    } else if (!resolvedUrl.startsWith('http')) {
-                        resolvedUrl = 'https://asiemodel.net/model/' + resolvedUrl;
+        const Http = getHttp();
+        if (Http) {
+            try {
+                const cookieMap = {};
+                const getHeaders = (extra = {}) => {
+                    const cookieStr = Object.entries(cookieMap).map(([k, v]) => `${k}=${v}`).join('; ');
+                    return { 'User-Agent': 'Mozilla/5.0 (Android; Mobile)', 'Cookie': cookieStr, ...extra };
+                };
+                const updateCookies = (res) => {
+                    const setCookie = res.headers ? (res.headers['set-cookie'] || res.headers['Set-Cookie']) : null;
+                    if (setCookie) {
+                        const cookieArr = Array.isArray(setCookie) ? setCookie : [setCookie];
+                        cookieArr.forEach(c => {
+                            const [k, v] = c.split(';')[0].split('=');
+                            if (k && v) cookieMap[k.trim()] = v.trim();
+                        });
                     }
+                };
 
-                    if (!title || title.toLowerCase() === 'papar') {
-                        const parentTd = a.closest('td');
-                        if (parentTd && parentTd.previousElementSibling) {
-                            title = parentTd.previousElementSibling.innerText.trim();
-                        }
-                    }
+                // 1. Log masuk ke ASIE Model
+                const loginRes = await Http.post({
+                    url: 'https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0' },
+                    data: new URLSearchParams({
+                        username: username,
+                        password: password,
+                        redirect: 'main.php?cb=ms',
+                        language: 'en',
+                        view: 'home',
+                        submit: 'Login'
+                    }).toString()
+                });
+                updateCookies(loginRes);
 
-                    return { title: title || resolvedUrl, url: resolvedUrl };
+                // 2. Ambil senarai RPT dengan Cookie Header
+                const rptRes = await Http.get({
+                    url: 'https://asiemodel.net/model/search9.php?action=search_yearly',
+                    headers: getHeaders()
                 });
 
-                let unique = [];
-                let urls = new Set();
-                for (let r of results) {
-                    if (!urls.has(r.url) && r.title.toLowerCase() !== 'papar') {
-                        unique.push(r);
-                        urls.add(r.url);
-                    }
+                const html = rptRes.data || '';
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                let links = Array.from(doc.querySelectorAll('.row_content table tbody tr td a[href^="rpt9.php?action=create_rpt"]'));
+                if (links.length === 0) {
+                    let all = Array.from(doc.querySelectorAll('a'));
+                    links = all.filter(a => a.href.includes('rpt9.php?action=create_rpt') || a.href.includes('rpt.php?action=create_rpt'));
                 }
-                return unique;
+
+                if (links.length > 0) {
+                    let results = links.map(a => {
+                        let title = a.innerText.trim();
+                        let resolvedUrl = a.getAttribute('href') || a.href || '';
+
+                        const match = resolvedUrl.match(/(rpt[9]?\.php.*)/);
+                        if (match) {
+                            resolvedUrl = 'https://asiemodel.net/model/' + match[1];
+                        } else if (!resolvedUrl.startsWith('http')) {
+                            resolvedUrl = 'https://asiemodel.net/model/' + resolvedUrl;
+                        }
+
+                        if (!title || title.toLowerCase() === 'papar') {
+                            const parentTd = a.closest('td');
+                            if (parentTd && parentTd.previousElementSibling) {
+                                title = parentTd.previousElementSibling.innerText.trim();
+                            }
+                        }
+
+                        return { title: title || resolvedUrl, url: resolvedUrl };
+                    });
+
+                    let unique = [];
+                    let urls = new Set();
+                    for (let r of results) {
+                        if (!urls.has(r.url) && r.title.toLowerCase() !== 'papar') {
+                            unique.push(r);
+                            urls.add(r.url);
+                        }
+                    }
+                    if (unique.length > 0) return unique;
+                }
+            } catch (e) {
+                console.log('CapacitorHttp getRptList failed, trying Web API fallback:', e);
+            }
+        }
+
+        // Browser Web App mode: Call /api/get-rpt-list API Proxy
+        try {
+            const apiRes = await fetch('/api/get-rpt-list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credentials: { username, password } })
+            });
+
+            if (apiRes.ok) {
+                const json = await apiRes.json();
+                if (json.success && Array.isArray(json.data)) {
+                    return json.data;
+                }
             }
         } catch (e) {
-            console.error('getRptList Error:', e);
+            console.error('getRptList Web API Error:', e);
         }
         return [];
     },

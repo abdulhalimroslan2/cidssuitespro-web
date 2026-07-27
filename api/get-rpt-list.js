@@ -1,97 +1,72 @@
-const { launchBrowser } = require('../modules/playwright-launcher');
-
 async function getRptList(username, password) {
-    let browser = null;
-    try {
-        console.log('Launching browser...');
-        browser = await launchBrowser({ headless: true });
-        const context = await browser.newContext();
-        const page = await context.newPage();
-        
-        // Block images, fonts, and css to save memory
-        await page.route('**/*', (route) => {
-            const type = route.request().resourceType();
-            if (['image', 'stylesheet', 'font', 'media'].includes(type)) {
-                route.abort();
-            } else {
-                route.continue();
-            }
-        });
-
-        console.log('Navigating to login page...');
-        await page.goto('https://asiemodel.net/model/main.php?cb=ms', { waitUntil: 'domcontentloaded', timeout: 30000 });
-        
-        console.log('Filling credentials...');
-        const emailInput = page.locator('input[type="email"], input[name="email"], input[name="username"], input[name="login"], input[placeholder="Login"], input[placeholder="Username"], input[placeholder*="E-mel"]').first();
-        await emailInput.fill(username);
-        const pwdInput = page.locator('input[type="password"], input[name="password"], input[placeholder="Password"]').first();
-        await pwdInput.fill(password);
-        
-        console.log('Waiting for login to complete...');
-        await Promise.all([
-            page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {}),
-            page.locator('button[type="submit"], input[type="submit"], button:has-text("Log in"), button:has-text("Login"), button:has-text("Log Masuk")').first().click()
-        ]);
-
-        console.log('Navigating to RPT page (search9.php)...');
-        await page.goto('https://asiemodel.net/model/search9.php?action=search_yearly', { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-        console.log('Extracting RPT links...');
-        const rpts = await page.evaluate(() => {
-            let links = Array.from(document.querySelectorAll('.row_content table tbody tr td a[href^="rpt9.php?action=create_rpt"]'));
-            
-            if (links.length === 0) {
-                 let all = Array.from(document.querySelectorAll('a'));
-                 links = all.filter(a => a.href.includes('rpt9.php?action=create_rpt') || a.href.includes('rpt.php?action=create_rpt'));
-            }
-            
-            if(links.length > 0) {
-                let results = links.map(a => {
-                    let title = a.innerText.trim();
-                    if(!title) title = a.href;
-                    return { title: title, url: a.href };
-                });
-                
-                // Remove duplicates
-                let unique = [];
-                let urls = new Set();
-                for(let r of results) {
-                    if(!urls.has(r.url)) {
-                        unique.push(r);
-                        urls.add(r.url);
-                    }
-                }
-                return unique;
-            }
-            return [];
-        });
-
-        return rpts;
-    } catch (e) {
-        console.error('Error fetching RPT list:', e);
-        if (browser && e.message.includes('Timeout')) {
-            try {
-                const pages = await browser.contexts()[0].pages();
-                if (pages.length > 0) {
-                    const html = await pages[0].content();
-                    console.log("PAGE HTML AT TIMEOUT:", html.substring(0, 500));
-                    throw new Error(e.message + "\nPage HTML snippet: " + html.substring(0, 200));
-                }
-            } catch (innerErr) {
-                console.error("Could not extract HTML:", innerErr);
-            }
-        }
-        throw e;
-    } finally {
-        if (browser) await browser.close();
+    console.log('Logging into asiemodel.net via HTTP fetch...');
+    const loginBody = new URLSearchParams({
+        username: username,
+        password: password,
+        redirect: 'main.php?cb=ms',
+        language: 'en',
+        view: 'home',
+        submit: 'Login'
+    });
+    
+    const res1 = await fetch('https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        body: loginBody.toString(),
+        redirect: 'manual'
+    });
+    
+    let rawSetCookie = '';
+    if (res1.headers.getSetCookie) {
+        rawSetCookie = res1.headers.getSetCookie().join('; ');
+    } else {
+        rawSetCookie = res1.headers.get('set-cookie') || '';
     }
+    
+    const sessMatch = rawSetCookie.match(/PHPSESSID=([^;]+)/i);
+    const phpsessid = sessMatch ? sessMatch[1] : '';
+    
+    if (!phpsessid) {
+        console.error('No PHPSESSID cookie returned during login for user:', username);
+        return [];
+    }
+
+    console.log('Fetching RPT search page (search9.php)...');
+    const res2 = await fetch('https://asiemodel.net/model/search9.php?action=search_yearly', {
+        headers: {
+            'Cookie': 'PHPSESSID=' + phpsessid,
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        }
+    });
+    
+    const html = await res2.text();
+    const rpts = [];
+    const seenUrls = new Set();
+    
+    const allLinks = [...html.matchAll(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
+    for (const m of allLinks) {
+        const url = m[1];
+        let title = m[2].replace(/<[^>]+>/g, '').trim();
+        if ((url.includes('create_rpt') || url.includes('rpt9.php') || url.includes('rpt.php')) && !seenUrls.has(url)) {
+            seenUrls.add(url);
+            let fullUrl = url.startsWith('http') ? url : 'https://asiemodel.net/model/' + url;
+            rpts.push({
+                title: title || fullUrl,
+                url: fullUrl
+            });
+        }
+    }
+    
+    return rpts;
 }
 
 // Simple test wrapper
 if (require.main === module) {
     (async () => {
         try {
-            // Testing with real credentials as requested by user
             const rpts = await getRptList('Roslan2', '@reeZ860');
             console.log('RPTs:', rpts);
         } catch (e) {
