@@ -1,18 +1,38 @@
 // POST /api/delete-rph - Next.js App Router API
 // Proxy to delete RPH automatically from asiemodel.net with IP Forwarding using Server-Sent Events
 
-import https from 'https';
+export const runtime = 'edge';
 
-function makeRequest(options, postData = null) {
+function makeRequest(urlStr, options, postData = null) {
     return new Promise((resolve, reject) => {
-        const req = https.request(options, (res) => {
-            let body = '';
-            res.on('data', chunk => body += chunk);
-            res.on('end', () => resolve({ statusCode: res.statusCode, headers: res.headers, body }));
-        });
-        req.on('error', reject);
-        if (postData) req.write(postData);
-        req.end();
+        let headers = options.headers || {};
+        const fetchOptions = {
+            method: options.method || 'GET',
+            headers: headers
+        };
+        if (postData) {
+            fetchOptions.body = postData;
+        }
+        
+        fetch(urlStr, fetchOptions).then(async (res) => {
+            const body = await res.text();
+            
+            // Extract Set-Cookie headers
+            const setCookieHeader = res.headers.get('set-cookie');
+            let setCookies = [];
+            if (setCookieHeader) {
+                setCookies = [setCookieHeader];
+            }
+            
+            // Reconstruct location
+            const location = res.headers.get('location');
+            const reconstructedHeaders = {
+                'set-cookie': setCookies,
+                'location': location
+            };
+            
+            resolve({ statusCode: res.status, headers: reconstructedHeaders, body });
+        }).catch(reject);
     });
 }
 
@@ -57,9 +77,7 @@ export async function POST(req) {
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
                 };
 
-                const initRes = await makeRequest({
-                    hostname: 'asiemodel.net',
-                    path: '/model/index.php',
+                const initRes = await makeRequest('https://asiemodel.net/model/index.php', {
                     method: 'GET',
                     headers: commonHeaders
                 });
@@ -78,14 +96,11 @@ export async function POST(req) {
                     submit: 'Login'
                 }).toString();
 
-                const loginRes = await makeRequest({
-                    hostname: 'asiemodel.net',
-                    path: '/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms',
+                const loginRes = await makeRequest('https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms', {
                     method: 'POST',
                     headers: {
                         ...commonHeaders,
                         'Content-Type': 'application/x-www-form-urlencoded',
-                        'Content-Length': Buffer.byteLength(loginData),
                         'Cookie': initialPhpsessid ? 'PHPSESSID=' + initialPhpsessid : ''
                     }
                 }, loginData);
@@ -105,9 +120,7 @@ export async function POST(req) {
                 const cookieHeader = 'PHPSESSID=' + finalPhpsessid;
 
                 sendLog('2/4: Mencari rekod MIW aktif di pelayan ASIE...');
-                const listRes = await makeRequest({
-                    hostname: 'asiemodel.net',
-                    path: '/model/search9.php?action=listmiw',
+                const listRes = await makeRequest('https://asiemodel.net/model/search9.php?action=listmiw', {
                     method: 'GET',
                     headers: { ...commonHeaders, 'Cookie': cookieHeader }
                 });
@@ -122,9 +135,7 @@ export async function POST(req) {
                 }
 
                 sendLog(`3/4: Membaca senarai RPH di bawah MIW ID ${miwId}...`);
-                const openRes = await makeRequest({
-                    hostname: 'asiemodel.net',
-                    path: `/model/miw9.php?action=openmiw&id=${miwId}`,
+                const openRes = await makeRequest(`https://asiemodel.net/model/miw9.php?action=openmiw&id=${miwId}`, {
                     method: 'GET',
                     headers: { ...commonHeaders, 'Cookie': cookieHeader }
                 });
@@ -150,9 +161,7 @@ export async function POST(req) {
                     const rphId = rphList[i];
                     sendLog(`  -> Membuang RPH ${i+1}/${rphList.length} (ID: ${rphId})...`);
 
-                    const delFormRes = await makeRequest({
-                        hostname: 'asiemodel.net',
-                        path: `/model/rph.php?action=deleteRPH&rph=${rphId}`,
+                    const delFormRes = await makeRequest(`https://asiemodel.net/model/rph.php?action=deleteRPH&rph=${rphId}`, {
                         method: 'GET',
                         headers: { ...commonHeaders, 'Cookie': cookieHeader }
                     });
@@ -176,15 +185,12 @@ export async function POST(req) {
                     delPostData.set('rph', rphId);
                     delPostData.set('submit', 'Sah Hapus');
 
-                    await makeRequest({
-                        hostname: 'asiemodel.net',
-                        path: '/model/rph.php',
+                    await makeRequest('https://asiemodel.net/model/rph.php', {
                         method: 'POST',
                         headers: {
                             ...commonHeaders,
                             'Cookie': cookieHeader,
                             'Content-Type': 'application/x-www-form-urlencoded',
-                            'Content-Length': Buffer.byteLength(delPostData.toString()),
                             'Referer': `https://asiemodel.net/model/rph.php?action=deleteRPH&rph=${rphId}`
                         }
                     }, delPostData.toString());
