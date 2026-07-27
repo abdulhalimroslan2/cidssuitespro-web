@@ -1,5 +1,9 @@
+// /api/get-rpt-list.js - Vercel Serverless Function
+// Fetch RPT list from asiemodel.net via server-side proxy
+
 async function getRptList(username, password) {
-    console.log('Logging into asiemodel.net via HTTP fetch...');
+    console.log(`[get-rpt-list] Logging in for user: ${username}`);
+
     const loginBody = new URLSearchParams({
         username: username,
         password: password,
@@ -8,8 +12,8 @@ async function getRptList(username, password) {
         view: 'home',
         submit: 'Login'
     });
-    
-    const res1 = await fetch('https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms', {
+
+    const loginRes = await fetch('https://asiemodel.net/model/index.php?exp=1&redirect=main.php%3Fcb%3Dms', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -18,72 +22,73 @@ async function getRptList(username, password) {
         body: loginBody.toString(),
         redirect: 'manual'
     });
-    
+
+    // Extract PHPSESSID from set-cookie header
     let rawSetCookie = '';
-    if (res1.headers.getSetCookie) {
-        rawSetCookie = res1.headers.getSetCookie().join('; ');
+    if (loginRes.headers.getSetCookie) {
+        rawSetCookie = loginRes.headers.getSetCookie().join('; ');
     } else {
-        rawSetCookie = res1.headers.get('set-cookie') || '';
-    }
-    
-    const sessMatch = rawSetCookie.match(/PHPSESSID=([^;]+)/i);
-    const phpsessid = sessMatch ? sessMatch[1] : '';
-    
-    if (!phpsessid) {
-        console.error('No PHPSESSID cookie returned during login for user:', username);
-        return [];
+        rawSetCookie = loginRes.headers.get('set-cookie') || '';
     }
 
-    console.log('Fetching RPT search page (search9.php)...');
-    const res2 = await fetch('https://asiemodel.net/model/search9.php?action=search_yearly', {
+    const sessMatch = rawSetCookie.match(/PHPSESSID=([^;]+)/i);
+    const phpsessid = sessMatch ? sessMatch[1] : '';
+
+    if (!phpsessid) {
+        console.error('[get-rpt-list] No PHPSESSID — login failed for user:', username);
+        return { success: false, error: 'Gagal log masuk ke asiemodel.net. Sila semak ID & Kata Laluan di Tetapan.' };
+    }
+
+    console.log('[get-rpt-list] Login OK. Fetching search9.php...');
+    const searchRes = await fetch('https://asiemodel.net/model/search9.php?action=search_yearly', {
         headers: {
             'Cookie': 'PHPSESSID=' + phpsessid,
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
         }
     });
-    
-    const html = await res2.text();
+
+    const html = await searchRes.text();
     const rpts = [];
-    const seenUrls = new Set();
-    
-    const allLinks = [...html.matchAll(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
-    for (const m of allLinks) {
-        const url = m[1];
-        let title = m[2].replace(/<[^>]+>/g, '').trim();
-        if ((url.includes('create_rpt') || url.includes('rpt9.php') || url.includes('rpt.php')) && !seenUrls.has(url)) {
-            seenUrls.add(url);
-            let fullUrl = url.startsWith('http') ? url : 'https://asiemodel.net/model/' + url;
-            rpts.push({
-                title: title || fullUrl,
-                url: fullUrl
-            });
+    const seenIds = new Set();
+
+    // ASIE Model uses single-quoted href: href='rpt9.php?action=create_rpt&id=...'
+    // This regex handles BOTH single and double quotes
+    const linkRegex = /<a[^>]+href=['"]([^'"]*create_rpt[^'"]*)['"'][^>]*>([^<]+)<\/a>/gi;
+    let match;
+
+    while ((match = linkRegex.exec(html)) !== null) {
+        const rawUrl = match[1];
+        const title = match[2].trim();
+
+        // Skip "Papar" button links — they duplicate the named RPT link
+        if (title.toLowerCase() === 'papar' || title.toLowerCase() === 'view') continue;
+
+        // Deduplicate by RPT ID
+        const idMatch = rawUrl.match(/[?&]id=(\d+)/);
+        const rptId = idMatch ? idMatch[1] : rawUrl;
+        if (seenIds.has(rptId)) continue;
+        seenIds.add(rptId);
+
+        const fullUrl = rawUrl.startsWith('http')
+            ? rawUrl
+            : 'https://asiemodel.net/model/' + rawUrl;
+
+        if (title && title.length > 2) {
+            rpts.push({ title, url: fullUrl });
         }
     }
-    
-    return rpts;
-}
 
-// Simple test wrapper
-if (require.main === module) {
-    (async () => {
-        try {
-            const rpts = await getRptList('Roslan2', '@reeZ860');
-            console.log('RPTs:', rpts);
-        } catch (e) {
-            console.error('Test failed:', e);
-        }
-    })();
+    console.log(`[get-rpt-list] Found ${rpts.length} RPTs for ${username}`);
+    return { success: true, data: rpts };
 }
 
 module.exports = async (req, res) => {
-    // Enable CORS
+    // CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+    res.setHeader('Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
@@ -96,18 +101,24 @@ module.exports = async (req, res) => {
 
     try {
         const { credentials } = req.body;
-        
+
         if (!credentials || !credentials.username || !credentials.password) {
             return res.status(400).json({ success: false, error: 'Credentials (username/password) are required' });
         }
 
-        const rpts = await getRptList(credentials.username, credentials.password);
-        res.status(200).json({ success: true, data: rpts });
+        const result = await getRptList(credentials.username, credentials.password);
+
+        if (!result.success) {
+            return res.status(401).json(result);
+        }
+
+        res.status(200).json(result);
+
     } catch (error) {
-        console.error('[Vercel API] Error in get-rpt-list:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Ralat pelayan Vercel: ' + error.message 
+        console.error('[get-rpt-list] Vercel error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Ralat pelayan: ' + error.message
         });
     }
 };
