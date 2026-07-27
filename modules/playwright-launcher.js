@@ -1,52 +1,17 @@
-const { chromium } = require('playwright-core');
-const path = require('path');
-const fs = require('fs');
+/**
+ * playwright-launcher.js - STUB untuk Vercel/Web deployment
+ * 
+ * Playwright TIDAK boleh digunakan di Vercel Serverless Functions.
+ * Fail ini adalah stub yang tidak crash supaya modul lain boleh import.
+ * Fungsi sebenar RPH submission dilakukan oleh electron-mock.js di client-side.
+ */
 
 async function launchBrowser(options = {}) {
-    let executablePath;
-    let browserOptions = {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-        ...options
-    };
-
-    if (process.env.VERCEL || process.env.AWS_REGION) {
-        // We are on Vercel or AWS Lambda
-        console.log("Using Sparticuz Chromium for Vercel...");
-        const chromiumSparticuz = (await import('@sparticuz/chromium')).default;
-        executablePath = await chromiumSparticuz.executablePath();
-        browserOptions.args = [
-            ...chromiumSparticuz.args,
-            '--disable-gpu',
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--disable-gl-drawing-for-tests',
-            '--mute-audio'
-        ];
-        browserOptions.headless = chromiumSparticuz.headless;
-    } else {
-        // We are on local machine or standard server, use system chromium or fallback
-        console.log("Using local system Chromium...");
-        // Fallback for macOS standard Chrome installation if local testing
-        const macChrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-        if (fs.existsSync(macChrome)) {
-            executablePath = macChrome;
-        } else {
-            throw new Error("Local chromium executable not found for local testing.");
-        }
-    }
-
-    if (executablePath) {
-        browserOptions.executablePath = executablePath;
-    }
-
-    if (browserOptions.channel === 'chrome') {
-        delete browserOptions.channel;
-    }
-
-    return await chromium.launch(browserOptions);
+    throw new Error('Playwright tidak tersedia di Vercel Web App. Sila gunakan aplikasi desktop (EXE/DMG) untuk automasi RPH penuh.');
 }
 
-module.exports = { launchBrowser };
+async function closeBrowser(browser) {
+    // noop
+}
+
+module.exports = { launchBrowser, closeBrowser };
