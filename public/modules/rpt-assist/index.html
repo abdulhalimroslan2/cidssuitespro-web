@@ -465,21 +465,64 @@
 
             function populateRptList(list) {
                 rptDropdown.innerHTML = '';
-                if (!list || list.length === 0) {
-                    rptDropdown.innerHTML = '<option value="">Tiada RPT dijumpai</option>';
-                } else {
-                    const defaultOpt = document.createElement('option');
-                    defaultOpt.value = '';
-                    defaultOpt.textContent = 'Sila Pilih RPT...';
-                    rptDropdown.appendChild(defaultOpt);
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = '-- Sila Pilih RPT --';
+                rptDropdown.appendChild(defaultOpt);
+
+                const seenUrls = new Set();
+
+                // Add list items from backend if available
+                if (list && Array.isArray(list) && list.length > 0) {
                     list.forEach(item => {
+                        if (item.url && !seenUrls.has(item.url)) {
+                            seenUrls.add(item.url);
+                            const opt = document.createElement('option');
+                            opt.value = item.url;
+                            opt.textContent = item.title || item.url;
+                            rptDropdown.appendChild(opt);
+                        }
+                    });
+                }
+
+                // Load custom saved RPTs from localStorage
+                try {
+                    const saved = JSON.parse(localStorage.getItem('cids_saved_rpts') || '[]');
+                    saved.forEach(item => {
+                        if (item.url && !seenUrls.has(item.url)) {
+                            seenUrls.add(item.url);
+                            const opt = document.createElement('option');
+                            opt.value = item.url;
+                            opt.textContent = '⭐ ' + (item.title || 'RPT Kustom');
+                            rptDropdown.appendChild(opt);
+                        }
+                    });
+                } catch(e) {}
+
+                // Default RPT fallbacks for Web App mode if no server items found
+                if (seenUrls.size === 0) {
+                    const defaults = [
+                        { title: 'Tingkatan 1 Bahasa Melayu', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                        { title: 'Tingkatan 1 Bahasa Inggeris', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                        { title: 'Tingkatan 1 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                        { title: 'Tingkatan 1 Sains', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                        { title: 'Tingkatan 2 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                        { title: 'Tingkatan 3 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
+                        { title: 'Tingkatan 5 Fizik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' }
+                    ];
+                    defaults.forEach(item => {
                         const opt = document.createElement('option');
                         opt.value = item.url;
                         opt.textContent = item.title;
                         rptDropdown.appendChild(opt);
                     });
-                    openRptBtn.disabled = true;
                 }
+
+                // Always add option to paste custom RPT URL or open ASIE
+                const customOpt = document.createElement('option');
+                customOpt.value = 'MANUAL_INPUT';
+                customOpt.textContent = '➕ Masukkan Pautan RPT Manual (Buka ASIE)';
+                rptDropdown.appendChild(customOpt);
             }
 
             window.addEventListener('message', (event) => {
@@ -537,8 +580,27 @@
                 });
             }
 
+            // Initial population with default options so user is never stuck
+            populateRptList([]);
+
             rptDropdown.addEventListener('change', (e) => {
-                openRptBtn.disabled = !e.target.value;
+                if (e.target.value === 'MANUAL_INPUT') {
+                    const customUrl = prompt("Sila masukkan pautan RPT daripada ASIE Model (atau kekalkan pautan laluan carian):", "https://asiemodel.net/model/search9.php?action=search_yearly");
+                    if (customUrl && customUrl.trim()) {
+                        const newOpt = document.createElement('option');
+                        newOpt.value = customUrl.trim();
+                        newOpt.textContent = '🔗 ' + customUrl.trim();
+                        newOpt.selected = true;
+                        rptDropdown.insertBefore(newOpt, rptDropdown.lastChild);
+                        openRptBtn.disabled = false;
+                        window.open(customUrl.trim(), '_blank');
+                    } else {
+                        rptDropdown.value = '';
+                        openRptBtn.disabled = true;
+                    }
+                } else {
+                    openRptBtn.disabled = !e.target.value;
+                }
             });
 
             // Transition from Step 1 (Pilih RPT) to Step 2 (Gemini Gems & Form)
