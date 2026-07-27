@@ -92,68 +92,19 @@ window.electronAPI = {
         };
     },
     checkLicense: async () => {
-        const LICENSE_KEY = 'cids_mobile_license';
-        const TRIAL_DAYS = 14;
-        const now = new Date();
-
-        let license = null;
+        // Web App Sandbox: Perisian sentiasa dalam status Lesen Aktif (tanpa percubaan 14 hari)
+        const activeLicense = {
+            mode: 'active',
+            active: true,
+            daysLeft: 9999,
+            activatedKey: 'CIDS-PRO-WEB-UNLIMITED',
+            expiryDate: '2099-12-31T23:59:59.000Z'
+        };
         try {
-            const str = localStorage.getItem(LICENSE_KEY) || sessionStorage.getItem(LICENSE_KEY);
-            if (str) license = JSON.parse(str);
+            const LICENSE_KEY = 'cids_mobile_license';
+            localStorage.setItem(LICENSE_KEY, JSON.stringify(activeLicense));
         } catch(e) {}
-
-        if (!license) {
-            try {
-                const match = document.cookie.match(new RegExp('(^| )' + LICENSE_KEY + '=([^;]+)'));
-                if (match) license = JSON.parse(decodeURIComponent(match[2]));
-            } catch(e) {}
-        }
-
-        // Clean corrupt trial data
-        if (license && license.mode === 'trial' && license.expiryDate) {
-            const expiry = new Date(license.expiryDate);
-            const installDate = license.installDate ? new Date(license.installDate) : null;
-            if (installDate && (now.getTime() - installDate.getTime()) > 30 * 24 * 60 * 60 * 1000) {
-                license = null;
-                try { localStorage.removeItem(LICENSE_KEY); sessionStorage.removeItem(LICENSE_KEY); } catch(e) {}
-            }
-        }
-
-        // Tiada data langsung — cipta trial baru 14 hari
-        if (!license) {
-            const expiry = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
-            license = {
-                mode: 'trial',
-                installDate: now.toISOString(),
-                expiryDate: expiry.toISOString(),
-                activatedKey: null
-            };
-            try { 
-                const val = JSON.stringify(license);
-                localStorage.setItem(LICENSE_KEY, val);
-                sessionStorage.setItem(LICENSE_KEY, val);
-                document.cookie = `${LICENSE_KEY}=${encodeURIComponent(val)}; max-age=31536000; path=/; SameSite=Lax`;
-            } catch(e) {}
-            return { mode: 'trial', daysLeft: TRIAL_DAYS, expiryDate: license.expiryDate };
-        }
-
-        // Lesen aktif
-        if (license.mode === 'active' && license.activatedKey) {
-            return { mode: 'active', daysLeft: null, activatedKey: license.activatedKey };
-        }
-
-        // Semak baki hari trial
-        if (license.mode === 'trial' || !license.activatedKey) {
-            const expiry = new Date(license.expiryDate || now);
-            const msLeft = expiry.getTime() - now.getTime();
-            const daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
-            if (daysLeft <= 0) {
-                return { mode: 'trial_expired', daysLeft: 0, expiryDate: license.expiryDate };
-            }
-            return { mode: 'trial', daysLeft: daysLeft, expiryDate: license.expiryDate };
-        }
-
-        return { mode: 'trial', daysLeft: TRIAL_DAYS };
+        return activeLicense;
     },
     activateLicense: async (key) => {
         const normalizedKey = (key || '').trim().toUpperCase();
