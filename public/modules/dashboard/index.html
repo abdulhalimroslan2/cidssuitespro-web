@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIDS Suites Pro Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-title">
+                <img src="../../assets/BRANDING.png" alt="CIDS SUITES PRO" class="branding-img">
+                <div class="subtitle-wrapper">
+                    <span class="line"></span>
+                    <p>AI Assists. Less Admin. More Teaching.</p>
+                    <span class="line"></span>
+                </div>
+            </div>
+            <div class="header-icon" style="display: none;">
+                <!-- Cap icon removed -->
+            </div>
+        </header>
+
+        <!-- Grid Cards -->
+        <div class="dashboard-grid">
+            <!-- Card 1: RPT ASSIST -->
+            <div class="card rpt-card" data-target="modules/rpt-assist/index.html" data-id="rpt">
+                <div class="card-icon">
+                    <img src="../../assets/RPT AI ASSIST ICON.png" alt="RPT Assist Icon" width="90" style="object-fit: contain;">
+                </div>
+                <h2>RPT ASSIST</h2>
+                <p>Jana Rancangan Pengajaran Tahunan (RPT) secara automatik berdasarkan kurikulum, standard dan data sekolah.</p>
+                <div class="arrow-btn">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Card 2: SCHEDULE ASSIST -->
+            <div class="card schedule-card" data-target="modules/schedule-assist/index.html" data-id="schedule">
+                <div class="card-icon">
+                    <img src="../../assets/SCHEDULE AI ASSIST ICON.png" alt="Schedule Assist Icon" width="90" style="object-fit: contain;">
+                </div>
+                <h2>SCHEDULE ASSIST</h2>
+                <p>Muat turun dan automasikan ekstraksi jadual waktu ke dalam sistem CIDS dengan pantas.</p>
+                <div class="arrow-btn">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Card 3: RPH ASSIST -->
+            <div class="card rph-card" data-target="modules/rph-assist/index.html" data-id="rph">
+                <div class="card-icon">
+                    <img src="../../assets/RPH AI ASSIST ICON.png" alt="RPH Assist Icon" width="90" style="object-fit: contain;">
+                </div>
+                <h2>RPH ASSIST</h2>
+                <p>Jana Rancangan Pengajaran Harian (RPH) berkualiti tinggi mengikut objektif pembelajaran dan amalan pedagogi terbaik.</p>
+                <div class="arrow-btn">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Card 4: RPH DELETER -->
+            <div class="card deleter-card" data-target="modules/rph-deleter/index.html" data-id="deleter">
+                <div class="card-icon">
+                    <img src="../../assets/RPH DELETER ICON.png" alt="RPH Deleter Icon" width="90" style="object-fit: contain;">
+                </div>
+                <h2>RPH DELETER</h2>
+                <p>Padam RPH yang tidak diperlukan dengan selamat dan kekalkan pengurusan fail yang teratur.</p>
+                <div class="arrow-btn">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Card 5: SETTING -->
+            <div class="card setting-card" data-target="modules/settings/index.html" data-id="setting">
+                <div class="card-icon">
+                    <img src="../../assets/SETTING ICON.png" alt="Setting Icon" width="90" style="object-fit: contain;">
+                </div>
+                <h2>SETTING</h2>
+                <p>Sesuaikan tetapan sistem, profil pengguna dan pilihan aplikasi mengikut keperluan anda.</p>
+                <div class="arrow-btn">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Handle clicks on cards to navigate via parent window
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', () => {
+                const target = card.getAttribute('data-target');
+                const id = card.getAttribute('data-id');
+                window.parent.postMessage({ type: 'navigate', target: target, id: id }, '*');
+            });
+        });
+    </script>
+</body>
+</html>

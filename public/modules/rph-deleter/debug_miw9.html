@@ -1,0 +1,1336 @@
+<!DOCTYPE html><html lang="ms"><head>
+<title>Model Reka Bentuk Instruksional Integral ASIE &lt;br/&gt;
+				Versi 9.0</title>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=0.5, user-scalable=yes">
+<link rel="stylesheet" href="/css/bootstrap-5.0.0-beta1/bootstrap.min.css">
+<link rel="stylesheet" href="/css/fontawesome-free-5.15.2-web/css/all.css">
+
+<link rel="stylesheet" type="text/css" href="/css/v9styles.css?20260205b">
+
+<link rel="stylesheet" type="text/css" href="/css/print_style.css">
+<link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+
+<link rel="stylesheet" type="text/css" href="/css/select2.min.css">
+<script async="" src="https://www.google-analytics.com/analytics.js"></script><script src="/js/tinymce_6.6.2/tinymce.min.js"></script>
+<script src="/js/tinymce_6.6.2/eqneditor.js"></script>
+
+<link rel="stylesheet" type="text/css" href="miw.20210515c.css?20260205b">
+<style>
+
+</style>
+  
+<script type="text/javascript" src="/js/jquery-2.2.4.min.js"></script>
+
+<script type="text/javascript" src="/js/cookie.js"></script>
+<script type="text/javascript" src="/js/select2.full.js"></script>
+
+<link href="/js/lity-2.3.1/dist/lity.css" rel="stylesheet">
+<script src="/js/lity-2.3.1/dist/lity.js"></script>
+<link rel="stylesheet" type="text/css" href="/css/jquery.datetimepicker.css">
+<script src="/js/jquery.datetimepicker.js"></script>
+<script type="text/javascript" src="miw.js?20260205b"></script>
+<script type="text/javascript">
+
+var msg1 = "Anda belum Simpan RPH ini!\nSila klik Cancel untuk kembali atau klik OK untuk meneruskan perancangan tanpa menyimpan maklumat pada RPH..";
+
+var msg2 = "Format setting is saved for: ";
+var msg3 = "Rekod ini sahaja";		
+var msg4 = "Semua Rekod Baharu";
+var msg5 = "Sila pilih Subjek dan Aras Kelas yang sama mengikut rekod yang dibuka";
+var msg6 = "Sila masukkan tarikh perancangan untuk MIW terlebih dahulu dan simpan Profil Pembelajaran anda";
+var msg_rph_slot_taken = "Anda tidak boleh menggunakan tarikh dan masa RPH ini kerana sudah terdapat RPH lain yang telah dihantar untuk pengesahan pada slot waktu yang sama";
+var hintToggle=0;
+
+var julattxt = "Julat hari MIW anda merangkumi %berapaminggu% minggu.\nRPH ini untuk minggu ke berapa?";
+//var cookieValue = getCookie("miw_dim_screen");
+//alert ('cookie =' + cookieValue);
+var belumedit=1;
+</script>
+<!-- Google tag (gtag.js) -->
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-J4MP2SJKZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-J4MP2SJKZ5');
+</script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-92269807-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<link rel="stylesheet" type="text/css" href="nav.css?20260205b">
+<style>
+@media print {
+  .noprint {
+    display: none !important;
+  }
+  table {
+	  page-break-after:auto;
+	  break-after: auto;  
+	  page-break-before:auto;
+	  break-before: auto;  
+  }
+  .folded #main, #main {
+	  width:100%;
+  }
+}
+
+.preprint pre {
+	text-align:left!important;
+	font-family:monospace;
+}
+.s__strategize {
+	/*min-width:35%;*/
+}
+.table_miw ul p {
+	margin-bottom:0;
+}
+.table_miw {
+	border:0;
+}
+.endorsement .chop-image {
+    clear: both;
+    padding: 0 5px 0 0;
+}
+.row h4 {
+	font-size:medium;
+}
+.table_miw .ititle.miw_modular {
+	font-weight:normal;
+}
+.remark ol {
+	padding-left:15px;
+}
+.fab {
+    font-family: 'Font Awesome 5 Brands'!important;
+}
+.whattodo {
+	position: relative;
+}
+.whattodo.expand {
+	position: absolute;
+	top:36px;
+}
+.lily-video {
+	position:relative!important;
+	right:0;
+}
+.lang_en .d-flex .lily-video {
+	right: 0;
+}
+.help_icon_bar {
+	position:relative;
+}
+@media screen {
+  .help_icon_bar {
+	  height:40px;
+  }
+}
+@media screen and (max-width:997px) {
+	.help_icon_bar {
+	  height:80px;
+  }
+  .select2-container {
+    max-width: 250px;
+  }
+}
+.help_icon_bar .help_icons {
+  position:absolute;
+  bottom:0;
+  right:0;
+}
+.header_miwpra page[size="A4"] {
+    min-height: unset;
+}
+.src_miwpra .top_page page[size="A4"] {
+    min-height: unset;
+	height:12cm;
+}
+.src_miwpra #analyze_strategize{
+	visibility:hidden;
+}
+.src_miwpra #timeslot2, .src_miwpra #timeslot3 {
+	display:none;
+}
+.src_miwpra .page.endorsement {
+	/*padding-top:150px;*/
+}
+.action_editRPH.src_miwpra .endorsement page{
+	display:none;
+}
+.src_miwpra .section_3 {
+	display:none;
+}
+.src_miwpra .rph_nav {
+	display:none;
+}
+.miw_resizeable {
+	
+}
+.endorsement select {
+	max-width:100%;
+}
+
+</style>
+</head>
+<body id="body" class="debug_ lang_ms folded action_ ver9 ">
+
+<nav class="navbar fixed-top navbar-expand-md navbar-dark navbar-asie topbar d-print-none" aria-label="Ninth navbar example">
+    <div class="container-fluid">
+
+	<button id="menuToggle" class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>    
+<!--
+	<button class="navbar-toggler d-block d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#mySidenav" aria-controls="mySidenav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+-->
+      <a class="navbar-brand" href="/model">CIDS <span style="font-size:14px">New-Gen</span></a>
+	  
+ 	  
+      <div class="collapse navbar-collapse" id="asietopnavbar">
+        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+          
+		  <!--
+		  <li class="nav-item active">
+            <a class="nav-link" aria-current="page" href="main9.php">
+			<span class="media-left d-lg-none">
+				<i class="icon fa fa-home fa-fw " aria-hidden="true"  ></i>
+			</span>
+			<span class="d-none d-lg-block">Laman Model</span></a>
+          </li>
+		  -->
+		  		   <li class="nav-item">
+            <a class="nav-link" href="main9.php">
+			<span class="media-left">
+				<i class="icon fa fa-file-alt fa-fw " aria-hidden="true"></i>
+			</span>
+			<span class="d-none d-lg-block">eRPH</span>
+			</a>
+          </li>
+		  		  		             <li class="nav-item">
+            <a class="nav-link" href="record.php?action=newmiw">
+			<span class="media-left">
+				<i class="icon fa fa-plus fa-fw " aria-hidden="true"></i>
+			</span>
+			<span class="d-none d-lg-block">Cipta Rekod Baharu</span>
+			</a>
+          </li>
+		 
+		  <li class="nav-item">
+            <a class="nav-link" href="search9.php?action=listmiw">
+			<span class="media-left">
+				<i class="icon fa fa-search fa-fw " aria-hidden="true"></i>
+			</span>
+			<span class="d-none d-lg-block">Buka Rekod</span></a>
+          </li>
+		  		  				  
+		  		  
+		  		  <li class="nav-item">
+            <a class="nav-link" href="search9.php?action=search_yearly">
+			<span class="media-left">
+				<i class="icon far fa-calendar-alt fa-fw " aria-hidden="true"></i>
+			</span>
+			<span class="d-none d-lg-block">RPT</span></a>
+          </li>
+		  		  <li class="nav-item">
+            <a class="nav-link" href="teachers9.php?action=waktumengajar">
+			<span class="media-left">
+				<i class="icon fas fa-table fa-fw " aria-hidden="true"></i>
+			</span>
+			<span class="d-none d-lg-block">Jadual Waktu</span></a>
+          </li>
+		  
+		   				
+		  		
+		          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="recordname" data-bs-toggle="dropdown" aria-expanded="false">
+			<span class="media-left">
+				<i class="icon fa fa-file-alt fa-fw " aria-hidden="true"></i>
+			</span>
+			<span class="d-none d-lg-block">Rekod:</span>
+			<span class="miw_name" id="miw_name" title="">M24</span></a>		
+            <ul class="dropdown-menu navbar-asie" aria-labelledby="recordname" id="miw_competency_submenu">
+			
+			              			  <li><a class="dropdown-item miw_competencies_submenu" onclick="checkBeforeNavigate('set9.php?action=instructional');return false;" href="set9.php?action=instructional">Integrasi Pengetahuan - Profil Pembelajaran</a></li>
+			  <li><a class="dropdown-item miw_competencies_submenu" onclick="checkBeforeNavigate('set9.php?action=media9');return false;" href="set9.php?action=media9">Integrasi Pengetahuan - Profil Pelajar</a></li>
+              <li><a class="dropdown-item miw_competencies_submenu" onclick="checkBeforeNavigate('set9.php?action=developingskills');return false;" href="set9.php?action=developingskills">Membangun - Kemahiran</a></li>
+			  <li><a class="dropdown-item miw_competencies_submenu" onclick="checkBeforeNavigate('set9.php?action=buildingcharacter');return false;" href="set9.php?action=buildingcharacter">Membentuk - Karakter</a></li>
+			  <li><a class="dropdown-item miw_competencies_submenu" onclick="checkBeforeNavigate('set9.php?action=instillingmetalearning');return false;" href="set9.php?action=instillingmetalearning">Menerap - Pembelajaran-Meta</a></li>
+			  			  			  <li><a class="dropdown-item miw_competencies_submenu" onclick="checkBeforeNavigate('miw9.php?action=miw');return false;" href="miw9.php?action=miw">MIW</a></li>
+			                
+            </ul>
+          </li>
+		         </ul>
+        
+		
+			
+      </div>
+	  <div class="navbar-expand" id="asieusermenu">
+		<ul class="nav navbar-nav ml-auto">
+			<div class="d-none d-lg-block">
+			
+			</div>
+	   
+			<!-- user_menu -->
+			<li class="nav-item d-flex align-items-center">
+				<div class="usermenu">
+					<div class="action-menu moodle-actionmenu nowrap-items d-inline" id="action-menu-1" data-enhance="moodle-core-actionmenu">
+						<div class="menubar d-flex " id="action-menu-1-menubar" role="menubar">
+
+                <div class="action-menu-trigger">
+                    <div class="dropdown">
+                        <a href="#" tabindex="0" class="nav-link dropdown-toggle icon-no-margin" id="profilemenu" aria-label="User menu" data-bs-toggle="dropdown" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" aria-controls="action-menu-1-menu">
+				
+                            <span class="userbutton"><span class="usertext mr-1">Roslan Arshad </span>
+														</span>
+                                
+                            <b class="caret"></b>
+                        </a>
+						<ul class="dropdown-menu navbar-asie" aria-labelledby="profilemenu">
+						  <li><a class="dropdown-item" href="admin9.php?action=profail">Sunting Profil Saya</a></li>
+
+				
+						  <li><a class="dropdown-item" href="akaun.php">Akaun</a></li>
+										  <!-- <li><a class="dropdown-item" href="javascript:void(0);">Mesej</a></li> -->
+						  <li><a class="dropdown-item" href="logout.php?redirect=">Log Keluar</a></li>
+						  						  
+						</ul>
+                    </div>
+                </div>
+
+						</div>
+
+				</div></div>
+			</li>
+		</ul>
+		</div>
+    </div>
+  </nav>
+  
+<div class="asie-wrapper"> 
+
+<div id="overlay"></div>
+	
+<nav id="mySidenav" class="d-print-none sidenav navbar  navbar-dark navbar-asie d-md-block sidebar  side-menu" aria-hidden="false" tabindex="-1" style="min-height: 674px;">
+	 <script>document.getElementById("mySidenav").style.minHeight = (window.innerHeight-46)+'px';</script>  
+   <div id="mySidenav2" class="d-md-block ">
+        <ul class="nav flex-column pt-3">
+          <li class="nav-item chevron-link">
+            <a class="nav-link" onclick="toggleNav();" href="javascript:void(0);">
+			<div class="media media-expand">
+				<span class="media-left">
+					<i class="icon fa fa-chevron-circle-right fa-fw " aria-hidden="true" title="Expand Menu" alt="Expand Menu"></i>
+				</span>
+				<span class="media-body ">&nbsp;</span>
+			</div>	
+			<div class="media media-collapse">
+				<span class="media-left">
+					<i class="icon fa fa-chevron-circle-left fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Tutup Menu</span>
+			</div>	
+            </a>
+          </li>
+		  		  <li class="nav-item">
+            <a class="nav-link" href="main.php">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-home fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Laman Utama</span>
+			</div>	
+            </a>
+          </li>
+		  		  
+		 
+		  <li class="nav-item  dropdown">
+		    <a href="javascript:void(0);" class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#record-collapse" aria-expanded="false">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-file-alt fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Rekod</span>
+			</div>	
+            </a>
+			<div class="collapse d-md-block" id="record-collapse">
+			<ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small dropdown-menu navbar-asie">
+							<li><a class="dropdown-item" href="record.php?action=newmiw">
+				Cipta Rekod Baharu</a>
+				</li>
+				<li><a class="dropdown-item" href="search9.php?action=listmiw">
+				Buka Rekod</a>
+				</li>
+															
+												
+				 				 				<li><a class="dropdown-item" href="search9.php?action=sharedmiw">
+				Perkongsian Rekod</a>
+				</li>
+				 								<li><a class="dropdown-item" href="search9.php?action=searchlib">Koleksi Rekod</a>
+				</li>
+								
+								<li class="divider"></li>
+				<li><a class="dropdown-item" href="record.php?action=editmiw">
+				Sunting Rekod</a></li>
+				<li><a class="dropdown-item" href="record.php?action=deletemiw">
+				Hapus Rekod</a></li>
+				<li><a class="dropdown-item" href="main9.php?action=clearmiw">
+				Tutup Rekod</a></li>
+				
+							<li class="divider"></li>
+				<li><a class="dropdown-item" href="record.php?action=search_yearly">
+				Rancangan Pelajaran Tahunan</a></li> 
+				<li><a class="dropdown-item" href="record.php?action=sharedrpt">
+				Perkongsian Rancangan Pelajaran Tahunan</a></li> 
+		
+				</ul>
+			</div>				
+          </li>
+		  		
+			<li class="nav-item dropdown">
+            <a class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#profile-collapse" aria-expanded="false" href="javascript:void(0);">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-user-circle fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Profil</span>
+			</div>	
+            </a>
+			<div class="collapse d-md-block" id="profile-collapse">
+			<ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small dropdown-menu navbar-asie">
+				
+				
+				<li><a class="dropdown-item" href="admin9.php?action=profail">
+				Sunting Profil Saya</a></li>
+				<li><a class="dropdown-item" href="admin9.php?action=profail_institusi">
+				Profil Institusi</a></li>
+												<li class="divider"></li>
+				<li><a class="dropdown-item" href="admin9.php?action=senarai">
+				Cari Profil Pengguna</a></li>
+								<li><a class="dropdown-item" href="admin9.php?action=cipta_profail">
+				Cipta Profil Pengguna</a></li>
+									</ul>
+			</div>	
+          </li>
+
+		  
+		  <li class="nav-item dropdown">
+            <a class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#setting-collapse" aria-expanded="false" href="javascript:void(0);">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-cog fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Tetapan</span>
+			</div>	
+            </a>
+			<div class="collapse d-md-block" id="setting-collapse">
+			<ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small dropdown-menu navbar-asie">
+									<li><a class="dropdown-item" href="set9.php?action=LeaCla&amp;do=create">Cipta Kelas Baharu</a></li>
+					<li><a class="dropdown-item" href="set9.php?action=LeaCla&amp;do=createcombined">Cipta Kelas Gabungan</a></li>
+					<li><a class="dropdown-item" href="set9.php?action=LeaCla&amp;do=search">Sunting Kelas</a></li>
+				
+				 
+				<li><a class="dropdown-item" href="teachers9.php?action=waktumengajar">
+				Jadual Waktu Instruksional</a></li>
+				<li class="divider"></li>
+			
+				<li><a class="dropdown-item" href="set9.php?action=InsPro">
+				Profil Pembelajaran</a></li>
+				<li><a class="dropdown-item" href="set9.php?action=FacPro">
+				Adegan Pengajaran</a></li>
+				
+			
+															
+			</ul>
+			</div>			
+          </li>
+
+		   <li class="nav-item dropdown">
+            <a class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#resource-collapse" aria-expanded="false" href="javascript:void(0);">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa-fw fas fa-images " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Sumber</span>
+			</div>	
+            </a>
+			<div class="collapse d-md-block" id="resource-collapse">
+			<ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small dropdown-menu navbar-asie">
+								<li id="li_link_to_rph_resources" style="display:none"><a class="dropdown-item" id="menu_link_to_rph_resources" onclick="popupCenter('upload.php?action=uploadRefleksi&amp;rph=&amp;bahanrefleksi=pbd', 'Settings',1000,450);" href="javascript:void(0);">
+				Pautan ke Sumber Maklumat</a></li>
+				
+				
+				<li><a class="dropdown-item" href="resource.php">
+				Library</a></li>
+				<li><a class="dropdown-item" onclick="popupCenter('mediagallery.php?pop=1', 'Settings',1000,450);" href="javascript:void(0);">
+				Galeri</a></li>
+			
+			</ul>
+			</div>			
+          </li>
+		  
+		  		  <li class="nav-item dropdown">
+            <a class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#statistic-collapse" aria-expanded="false" href="javascript:void(0);">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-chart-bar fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Statistik</span>
+			</div>	
+            </a>
+			<div class="collapse d-md-block" id="statistic-collapse">
+			<ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small dropdown-menu navbar-asie">
+				<li><a class="dropdown-item" href="dashboard.php">Dashboard</a></li>
+				<li><a class="dropdown-item" href="statistik9.php">Statistik Pengguna</a></li>
+				<li><a class="dropdown-item" href="statistik9.php?action=demo">Statistik Pendidikan Abad Ke-21</a></li>
+			</ul>
+			</div>
+          </li>
+		  		  
+		  <li class="  my-3"></li>
+		  
+						<li class="nav-item dropdown">
+            <a class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#language-collapse" aria-expanded="false" href="javascript:void(0);">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-globe fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Bahasa</span>
+			</div>	
+            </a>
+			<div class="collapse d-md-block" id="language-collapse">
+			<ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small dropdown-menu navbar-asie">
+				<li><a class="dropdown-item" href="main9.php?cb=ms">Bahasa Melayu</a></li><li><a class="dropdown-item" href="main9.php?cb=en">English</a></li>				</ul>
+				</div>
+			</li>
+								
+		  		  
+		  <li class="nav-item dropdown">
+            <a class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#communication-collapse" aria-expanded="false" href="javascript:void(0);">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-phone-square-alt fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Komunikasi</span>
+			</div>	
+            </a>
+			<div class="collapse d-md-block" id="communication-collapse">
+			<ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small dropdown-menu navbar-asie">
+				<li><a class="dropdown-item" href="meeting9.php?action=videomeet">
+					CIDS VideoCorps</a></li>
+				
+			</ul>
+			</div>
+          </li>
+		  
+		  
+		  <li class="nav-item">
+			            <a class="nav-link" target="web" href="https://asiemodel.net/ms/tutorial-video/">
+						<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-video fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Bimbingan Video</span>				
+			</div>	
+            </a>
+          </li>
+		 
+		  
+		  	 
+		
+ 		  <li class="nav-item dropdown">
+            <a class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#help-collapse" aria-expanded="false" href="javascript:void(0);">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-info-circle fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Bantuan</span>
+			</div>	
+            </a>
+			<div class="collapse d-md-block" id="help-collapse">
+			<ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small dropdown-menu navbar-asie" id="menu1">
+			
+			
+							
+			
+				<li><a class="dropdown-item" href="main9.php?wb=open">Langkah-langkah Pengguna Baharu</a></li>
+
+								
+				<li><a class="dropdown-item" href="https://asiemodel.net/ms/manual-pengguna-pengenalan-umum/" target="web">Kerangka Konseptual CIDS</a></li>
+				<li><a class="dropdown-item" href="https://asiemodel.net/ms/manual-pengguna-memulakan-perancangan/" target="web">Manual Pengguna - Memulakan Perancangan</a></li>
+				<li><a class="dropdown-item" href="https://asiemodel.net/perancangan-prasekolah-2026-prasekolah-pendidikan-khas-2026/" target="web">Manual Pengguna - Prasekolah</a></li>
+				
+				<li><a class="dropdown-item" href="https://asiemodel.net/ms/bimbingan-pdpr/" target="web">Bimbingan Pengguna – Kemahiran PdPR</a></li>
+									<!--
+				<li ><a class="dropdown-item" href="https://asiemodel.net/ms/kategori-subjek/" target="web">Manual Pengguna: Kategori Subjek</a></li>
+				-->
+				<li><a class="dropdown-item" href="https://asiemodel.net/ms/rujukan-dskp/" target="web">Rujukan: Sukatan &amp; Kategori Subjek</a></li>
+				<!--
+				<li ><a class="dropdown-item" href="https://asiemodel.net/ms/kbs-bahan-rujukan/" target="web">KBS - Bahan Rujukan</a></li>
+				-->
+				
+				
+				
+										
+								<!-- 
+				<li class="divider"></li>
+				<li ><B>Rujukan</B>
+									<li><a class="dropdown-item" href="javascript:void(0);">KBAT<i class="icon-arrow-right"></i></a>
+						<ul class="dropdown-menu sub-menu navbar-asie" style="top:40px">
+							<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/KBAT/KBAT (aplikasi di sekolah 2014).pdf">KBAT (aplikasi di sekolah 2014)</a></li>
+							<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/KBAT/KBAT (pedagogi -2014).pdf">KBAT (pedagogi -2014)</a></li>
+							<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/KBAT/KBAT (konsep) (BI).pdf">KBAT (konsep) (BI)</a></li>
+							<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/KBAT/KBAT (panduan).pdf">KBAT (panduan)</a></li>
+							<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/KBAT/KBAT (aplikasi di sekolah 2014).pdf">KBAT (aplikasi di sekolah 2014)</a></li>
+							<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/KBAT/KBAT (konsep).pdf">KBAT (konsep)</a></li>
+
+						</ul>
+					</li>
+					<li><a class="dropdown-item" href="javascript:void(0);">Ujian Psikometrik<i class="icon-arrow-right"></i></a>
+						<ul class="dropdown-menu sub-menu navbar-asie" style="top:40px">
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/ujian psikometrik_rendah (panduan).pdf">Ujian psikometrik_rendah (panduan)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Ujian psikometrik_menengah (panduan).pdf">Ujian psikometrik_menengah (panduan).pdf</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Ujian Psikometrik (IMK).pdf">Ujian Psikometrik (IMK).pdf</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Ujian Psikometrik (ITP).pdf">Ujian Psikometrik (ITP).pdf</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Ujian Psikometrik (IKK).pdf">Ujian Psikometrik (IKK).pdf</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Kecerdasan Pelbagai (BI).pdf">Kecerdasan Pelbagai (BI)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Kecerdasan Pelbagai 2 (BI).pdf">Kecerdasan Pelbagai 2 (BI).pdf</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Ujian Aptitud Tahun3 (penerangan).pdf">Ujian Aptitud Tahun3 (penerangan).pdf</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Ujian Aptitud Tahun3 (dokumen).pdf">Ujian Aptitud Tahun3 (dokumen).pdf</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Gaya belajar (BI).pdf">Gaya belajar (BI).pdf</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Ujian Psikometrik/Ujian Psikometrik (huraian).pdf">Ujian Psikometrik (huraian).pdf</a></li>
+						</ul>
+					</li>
+					<li><a class="dropdown-item" href="javascript:void(0);">Pembelajaran Abad Ke-21<i class="icon-arrow-right"></i></a>
+						<ul class="dropdown-menu sub-menu navbar-asie" style="top:117px">
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pembelajaran Abad Ke-21/Pembelajaran Abad Ke-21 (huraian ringkas).pdf">Pembelajaran Abad Ke-21 (huraian ringkas)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pembelajaran Abad Ke-21/Pembelajaran Abad Ke-21_2 (BI).pdf">Pembelajaran Abad Ke-21_2 (BI)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pembelajaran Abad Ke-21/Pembelajaran Abad Ke-21 (BI).pdf">Pembelajaran Abad Ke-21 (BI)</a></li>
+						</ul>
+					</li>
+					<li><a class="dropdown-item" href="javascript:void(0);">Pendidikan Umum<i class="icon-arrow-right"></i></a>
+						<ul class="dropdown-menu sub-menu navbar-asie" style="top:40px">
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/Pembelajaran Abad Ke-21 (huraian ringkas).pdf">Pembelajaran Abad Ke-21 (huraian ringkas)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/Pembelajaran Abad Ke-21_2 (BI).pdf">Pembelajaran Abad Ke-21_2 (BI)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/Pendidikan UNESCO_2030 (BI).pdf">Pendidikan UNESCO_2030 (BI)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/Pengajaran berkesan (BI).pdf">Pengajaran berkesan (BI)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/Pendidikan UNESCO (BI).pdf">Pendidikan UNESCO (BI)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/Pembelajaran berasaskan hasilan (BI).pdf">Pembelajaran berasaskan hasilan (BI)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/PPPM 2013-2025.pdf">PPPM 2013-2025</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/Buku Panduan Pengurusan  PBS 2012.pdf">Buku Panduan Pengurusan  PBS 2012</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/Pembelajaran Abad Ke-21 (BI).pdf">Pembelajaran Abad Ke-21 (BI)</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/Pendidikan Umum/Ubahsuaian Taksonomi Bloom (BI).pdf">Ubahsuaian Taksonomi Bloom (BI)</a></li>
+						</ul>
+					</li>
+					<li><a class="dropdown-item" href="javascript:void(0);">PLC<i class="icon-arrow-right"></i></a>
+						<ul class="dropdown-menu sub-menu navbar-asie" style="top:168px">
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/PLC/Konsep PLC.pdf">Konsep PLC</a></li>
+						<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/PLC/Modul PLC.pdf">Modul PLC</a></li>
+						</ul>
+					</li>
+					<li><a class="dropdown-item" href="/helpfile/RUJUKAN_BM/PENJELASAN MEDIA PENGAJARAN.pdf">Penjelasan Media Pengajaran</a></li>
+					
+								</li>
+				-->
+			</ul>
+			</div>
+          </li>    
+		
+ 
+		 <li class="nav-item dropdown" id="faq">
+		             <a class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#faq-collapse" aria-expanded="false" href="https://asiemodel.net/ms/soalan-lazim-faq/">
+		 			<div class="media">
+				<span class="media-left">
+						
+					<i class="icon far fa-comment-dots" aria-hidden="true" style="width:1.25em;text-align: center;"></i>
+				</span>
+				<span class="media-body ">Soalan Lazim - FAQ</span>
+			</div>	
+            </a>
+		 </li>	
+
+
+		 
+		  <li class="nav-item dropdown">
+            <a class="btn-toggle nav-link align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#exit-collapse" aria-expanded="false" href="#">
+			<div class="media">
+				<span class="media-left">
+					<i class="icon fa fa-sign-out-alt fa-fw " aria-hidden="true"></i>
+				</span>
+				<span class="media-body ">Keluar</span>
+			</div>	
+            </a>
+			<div class="collapse d-md-block" id="exit-collapse">
+			<ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small dropdown-menu navbar-asie">
+						
+				<li><a class="dropdown-item" href="main.php">Laman Utama</a>
+				</li>
+							<li><a class="dropdown-item" href="logout.php?redirect=">Log Keluar</a>
+				</li>
+				
+			</ul>
+			</div>
+		</li>
+
+        </ul>
+
+        
+      </div>
+	  
+	
+ </nav>
+ <script>
+    const menu = document.getElementById('mySidenav');
+    const overlay = document.getElementById('overlay');
+    const toggleBtn = document.getElementById('menuToggle');
+
+    toggleBtn.addEventListener('click', () => {
+        menu.classList.toggle('active');
+        overlay.classList.toggle('active');
+        toggleBtn.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+        menu.classList.remove('active');
+        overlay.classList.remove('active');
+        toggleBtn.classList.remove('active');
+    });	
+
+</script>
+ <script type="text/javascript">
+function checkBeforeNavigate (url,msg="Anda belum Simpan tetapan atau kandungan! Sila klik Cancel untuk kembali atau klik OK untuk terus!") {
+
+	if (typeof belumedit === "undefined") {
+		proceed=true;
+	}
+	else if (belumedit) {
+		proceed=true;
+	}
+	else {
+		proceed=confirm(msg);
+	}
+	if (proceed) {
+		location.href=url;
+	}	
+	return false;
+}
+</script>
+ 	
+<main id="main" class="asie-arial13"> 
+
+<form method="post" action="miw9.php" class="form" name="miwform" id="miwform" onsubmit="return validateMIWForm()" autocomplete="off" enctype="multipart/form-data">
+
+
+
+
+
+
+	
+
+
+
+<div class="sticky-miw-nav">
+
+
+
+
+
+<div style="clear:both"></div>
+</div>
+
+
+<input name="dbug" type="hidden" value=""> 
+
+
+
+</form>
+<script>
+var refreshTime = 600000; // every 10 minutes in milliseconds
+window.setInterval( function() {
+    $.ajax({
+        cache: false,
+        type: "GET",
+        url: "fetch_data.php",
+        success: function(data) {
+        }
+    });
+}, refreshTime );
+
+function validateMIWForm() {
+	//alert('validate');
+  let x = document.forms["miwform"]["class_id"];
+  if (x.value == "") {
+	x.focus();
+    alert("Sila pilih kelas untuk cipta RPH");
+    return false;
+  }
+  let y = document.forms["miwform"]["rph[date]"];
+  if (y.value == "") {
+	//y.style.visibility='visible';
+	y.focus();
+    alert("Sila isikan tarikh RPH untuk cipta RPH");
+    return false;
+  }
+  //return true;
+  let c1 = ifLaterDate(y.value,miw_dateFrom);
+  let c2 = ifLaterDate(miw_dateTo,y.value);
+  if (c1 || c2) {
+	  alert ("Tarikh RPH mestilah antara tarikh mula dan akhir MIW!\n\n"+miw_dateFrom+" "+"Hingga"+ " "+ miw_dateTo);
+		let y2 = document.getElementById("rphdatetimepicker");
+		y2.focus;
+	  return false;
+  }
+	return true;
+}
+function ifLaterDate (date1,date2) {
+	//if date2 > date1 return true
+	str1 = date1.split('-');
+	str2 = date2.split('-');
+	dateA = new Date(str1[2]+'-'+str1[1]+'-'+str1[0]);
+	dateB = new Date(str2[2]+'-'+str2[1]+'-'+str2[0]);
+	if (dateB > dateA) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}	
+
+</script>
+
+
+<div id="debug_float"></div>
+<div id="popup_float">
+	<div class="inner">
+		<div class="popup_close" onclick="closeSelectingTimeTable('popup_float');">Tutup <span class="x">X</span></div>
+		<div id="popup_float_content"><img src="/images/loading.gif"></div>
+	</div>
+</div>
+
+</main>
+</div>
+
+	<style>
+	.info ul {padding-left: 2rem;}
+	.info {font-size: small;}
+	</style>
+	<!-- WhatsApp Modal -->
+<div class="modal fade" id="whatsappModal" tabindex="-1" aria-labelledby="whatsappModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="whatsappModalLabel">Hantar Pesanan WhatsApp</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="clearWhatsAppModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="predefined" class="form-label">Pilih respon:</label>
+          <select class="form-select" id="predefined">
+            <option></option>
+			<option>Tahniah kerana melengkapkan perancangan instruksional dengan baik</option><option>Sila baca ulasan pada bahagian Pengesahan dan ambil tindakan segera</option><option>Terdapat perancangan instruksional yang belum dihantar, sila ambil tindakan segera</option><option>Sila catatkan Refleksi /Penilaian pada perancangan instruksional anda mengikut kesesuaian</option><option>Sila baca ulasan pada bahagian Aktiviti Perancangan Instruksional untuk perhatian </option><option>Sila berjumpa dengan saya untuk perbincangan</option><option>Terdapat kesilapan dalam pemilihan mata pelajaran, sila betulkan</option><option>Sila bersedia untuk pemantauan</option><option>Penyelaras sila kemaskini jumlah guru pada ruang Profil Institusi</option><option>Sila kemaskini profil anda</option><option>Sila kemaskini Jadual Waktu Instruksional anda dan aktifkannya</option>          </select>
+        </div>
+        <div class="mb-3">
+          <label for="customMessage" class="form-label">Mesej anda:</label>
+          <textarea class="form-control" id="customMessage" rows="4"></textarea>
+        </div>
+				<div class="mb-3 info">
+          Sila pastikan anda telah menyimpan nombor penerima di dalam telefon anda        </div>
+				<div class="mb-3 info">
+          <p><strong>PERHATIAN:</strong> Untuk fitur ini berfungsi, pastikan nombor telefon bimbit guru berkaitan sudah tersimpan dalam telefon bimbit anda dan telahpun berkomunikasi melalui whatsapp.</p>
+<p><strong>Fitur ini digunakan oleh pentadbir, penyelaras, pembingan peringkat institusi sahaja (sekolah) untuk perhatian dan tindakan segera guru:</strong></p>
+<ul>
+<li>Menghantar mesej ringkas kepada guru berkaitan perancangan pengajaran</li>
+<li>Masalah/isu teknikal</li>
+<li>Perkara-perkara lain yang bersesuaian</li>
+</ul>
+<p>Beberapa mesej ringkas disediakan untuk pilihan mengikut kesesuaian. Anda boleh juga menulis mesej ringkas pada ruang yang disediakan.</p>        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" onclick="clearWhatsAppModal()">Batal</button>
+        <button class="btn btn-success" onclick="sendWhatsApp()">Hantar&nbsp; <i class="fab fa-whatsapp" style="font-size:20px"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+	let cachedPhoneNumber = null;
+	let currentUserId = null;
+	let myWindow;
+	const senderName = "Roslan Arshad, Pejabat Pendidikan Daerah Kerian";
+
+	function openWhatsAppModal(userId) {
+		console.log('userId='+userId);
+		currentUserId = userId;
+		const modal = new bootstrap.Modal(document.getElementById('whatsappModal'));
+		modal.show();
+	}
+
+	function clearWhatsAppModal() {
+		document.getElementById('customMessage').value = '';
+		document.getElementById('predefined').selectedIndex = 0;
+	}
+
+	function fillCustomMessage() {
+		const selected = document.getElementById('predefined').value;
+		document.getElementById('customMessage').value = selected;
+	}
+
+	function sendWhatsApp() {
+		const selected = document.getElementById('predefined').value;
+		const message = document.getElementById('customMessage').value;
+		const fullmessage = selected + '\n\n' + message;
+		if (!fullmessage.trim()) {
+			alert("Please enter a message.");
+			return;
+		}
+		const footerNote = `\n\n_— Pesanan ini dihantar oleh ${senderName} melalui CIDS_`;
+		const finalMessage = fullmessage.trim() + footerNote;
+	
+		if (cachedPhoneNumber) {
+			sendToWhatsApp(cachedPhoneNumber, finalMessage);
+		} else {
+			// Get phone number from PHP via AJAX
+			console.log('currentUserId='+currentUserId);
+			fetch(`fetch_user_phone.php?user_id=${currentUserId}`)
+				.then(response => response.text())
+				.then(phone => {
+					//if (!phone || phone === 'null') {
+					//	alert("Phone number not available.");
+					//	return;
+					//}
+					cachedPhoneNumber = phone;
+					sendToWhatsApp(phone, finalMessage);
+				})
+				.catch(error => {
+					alert("Failed to retrieve phone number.");
+					console.error(error);
+				});
+		}
+	}
+	
+	function sendToWhatsApp(phone, message) {
+		
+		console.log('phone='+phone);
+		
+		const encodedMessage = encodeURIComponent(message);
+		if (phone=='null') {
+			phone='';
+		}
+		const whatsappURL = `https://wa.me/${phone}?text=${encodedMessage}`;
+		console.log('whatsappURL='+whatsappURL);
+
+		window.open(whatsappURL, 'myWindow', "width=600, height=500");
+
+		const modalElement = document.getElementById('whatsappModal');
+		const modal = bootstrap.Modal.getInstance(modalElement);
+		modal.hide();
+
+		clearWhatsAppModal();
+		
+	}
+	
+</script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a19059211c60b4cd',t:'MTc4MzY5NDY4NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; visibility: hidden;"></iframe><script defer="" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;3375acf92f06438e94a4d307a9f7b026&quot;,&quot;r&quot;:1,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+
+
+<script src="/js/bootstrap-5.0.0-beta1/bootstrap.bundle.min.js"></script>
+<script type="text/javascript">
+function toggleNav() {
+	var element = document.getElementById("body");
+	if (element.classList) {
+	  element.classList.toggle("folded");
+	} else {
+	  // For IE9
+	  var classes = element.className.split(" ");
+	  var i = classes.indexOf("folded");
+
+	  if (i >= 0) {
+		classes.splice(i, 1);
+	  }
+	  else {
+		classes.push("folded");
+		element.className = classes.join(" ");
+	  }
+	}
+
+	if (folded=='yes') {
+		setCookie('folded','no',100)
+	}
+	else if (folded=='no') {
+		setCookie('folded','yes',100)
+	}
+}
+var folded = getCookie('folded');
+if (folded==='') folded = 'yes';
+</script>
+<script>
+jQuery('#datetimepicker').datetimepicker({
+	lang:'ms',
+ timepicker:false,
+ format:'d-m-Y'
+});
+jQuery('#timepicker1').datetimepicker({
+	lang:'ms',
+ datepicker:false,
+ format:'g:i A',
+ step:5,
+ minTime:'06:00',
+ maxTime:'22:30'
+});
+jQuery('#timepicker2').datetimepicker({
+	lang:'ms',
+ datepicker:false,
+ format:'g:i A',
+ step:5,
+ minTime:'06:00',
+ maxTime:'22:30'
+});
+jQuery('#timepicker3').datetimepicker({
+	lang:'ms',
+ datepicker:false,
+ format:'g:i A',
+ step:5,
+ minTime:'06:00',
+ maxTime:'22:30'
+});
+jQuery('#timepicker4').datetimepicker({
+	lang:'ms',
+ datepicker:false,
+ format:'g:i A',
+ step:5,
+ minTime:'06:00',
+ maxTime:'22:30'
+});
+jQuery('#timepicker5').datetimepicker({
+	lang:'ms',
+ datepicker:false,
+ format:'g:i A',
+ step:5,
+ minTime:'06:00',
+ maxTime:'22:30'
+});
+jQuery('#timepicker6').datetimepicker({
+	lang:'ms',
+ datepicker:false,
+ format:'g:i A',
+ step:5,
+ minTime:'06:00',
+ maxTime:'22:30'
+});
+jQuery('.timepickerendorse').datetimepicker({
+ lang:'ms',
+ //timepicker:false,
+ format:'d-m-Y g:i A'
+});
+$(".whattodo").click(function(){
+	var id = $(this).attr("id");
+	//alert(id);
+	if(id) {
+		$("#"+id).toggleClass("expand");
+	}
+	else {
+		$(".whattodo").toggleClass("expand");
+	}
+});
+$(".tippy").click(function(){
+	var id = $(this).attr("id");
+    $("#"+id).toggleClass("expand");
+});
+
+var debug_float = document.getElementById("debug_float");
+
+
+    $(document).ready(function(){
+		var el = $('.sticky-miw-nav');
+		if (el.length) {
+			var stickyTop = el.offset().top, 
+            latestScroll = 0,
+            bottom = 20;
+			width = el.width();
+			//alert(stickyTop);
+        $(window).scroll(function () {
+            stickyHeight = el.outerHeight(true);
+            var limit = $('#nav-port').offset().top;
+			//alert(limit);
+            var windowTop = $(window).scrollTop();
+			var windowBottom = $(window).height();
+			var screenHeight = window.innerHeight;
+            //if (stickyTop < windowTop-10) {
+			if (limit > windowTop + screenHeight - stickyHeight ) {
+                el.css({position: 'relative', bottom: -170});
+                el.removeClass('show-fix');
+            }else {
+				el.addClass('show-fix');               
+                el.css({position: 'fixed', bottom: 0, width:width});
+            }
+			/*
+            if (limit > stickyTop) {
+				alert(limit);
+                var diff = limit - windowTop;
+                el.css({top: diff});
+                el.removeClass('show-fix');
+            }
+			*/
+			/*
+            latestScroll = windowTop;
+			debug_float.innerHTML = 'limit='+limit+'<br>';
+			debug_float.innerHTML += 'stickyheight='+stickyHeight+'<br>';
+			debug_float.innerHTML += 'windowTop='+windowTop+'<br>';
+			debug_float.innerHTML += 'windowBottom='+windowBottom+'<br>';
+			debug_float.innerHTML += 'screenHeight='+screenHeight+'<br>';
+			*/
+        });
+		}
+    });
+function deleteEvaLine(row)
+	{
+		var i=row.parentNode.parentNode;
+		i.parentNode.removeChild(i) 
+	}
+function addEvaLine(row,id)
+	{
+		var my=row.parentNode.parentNode;
+		let newi = my.cloneNode(true);
+
+		var button = document.getElementById("pbd-action-"+id);
+		button.innerHTML = "<button type='button' class='btn btn-primary btn-sm' onClick='deleteEvaLine(this);return false;'>Hapus</button>";
+		
+		var newid = parseInt(id);
+		newid++;
+		//alert (newid);
+		
+        var InputType = newi.getElementsByTagName("input");
+
+        for (var i=0; i<InputType.length; i++){
+         if( InputType[i].type=='checkbox'){
+            InputType[i].checked = false;  
+        }else{
+           InputType[i].value='';               
+            }
+        }
+		
+		var html = newi.innerHTML;
+		
+		
+		var oldtext = "\\[pbd\\]\\["+id+"\\]";
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "[pbd]["+newid+"]");
+		
+		oldtext = "select_(\\d+)-"+id;
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "select_$1"+"-"+newid);	
+		
+		oldtext = "\\(this,"+id+"\\)";
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "(this,"+newid+")");	
+
+		oldtext = "pbd-action-"+id;
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "pbd-action-"+newid);	
+
+		oldtext = "kiraPeratusPBD\\("+id+"\\)";
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "kiraPeratusPBD("+newid+")");	
+
+		oldtext = "pbd_bilanganmurid_"+id;
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "pbd_bilanganmurid_"+newid);	
+
+		oldtext = "pbd_peratusmurid_"+id;
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "pbd_peratusmurid_"+newid);	
+
+
+		newi.id = "pbd-row-"+newid;
+		newi.innerHTML = html;
+		
+		
+		//var script = newi.getElementsByTagName("script");
+		//alert(script);
+		//for (var i=0; i<script.length; i++){
+			//alert(script[i].innerText);
+			//eval(script[i].innerText);
+        //}
+
+		my.parentNode.appendChild(newi) 
+	
+		var peratusmurid = document.getElementById("pbd_peratusmurid_"+newid);
+		peratusmurid.innerHTML = "";
+	
+		var divchosen = document.getElementById("pbd-row-"+newid).getElementsByClassName("div-chosen-select");
+		for (var i=0; i<divchosen.length; i++){
+			var spanelement = divchosen[i].getElementsByTagName("span");
+			for (var j=0; j<spanelement.length; j++){
+				//alert(spanelement[j].innerHTML);
+				spanelement[j].parentNode.removeChild(spanelement[j]);
+			}	
+			var selectelement =  divchosen[i].getElementsByTagName("select");
+			for (var j=0; j<selectelement.length; j++){
+				selectelement[j].classList.remove("select2-hidden-accessible");
+				
+				var thiselementid = selectelement[j].id;
+				//alert (thiselementid);
+				$('#'+thiselementid).select2({tags: true});
+			}
+		}
+
+	
+		
+	}
+function kiraPeratusPBD(id) {
+	var source = document.getElementById('pbd_bilanganmurid_'+id).value;
+	var target = document.getElementById('pbd_peratusmurid_'+id);
+	var pembahagi = document.getElementById('pbd_student_count').value;
+	var peratus = ((source/pembahagi) * 100).toFixed(1);
+	target.innerHTML = peratus+"%";	
+}
+function updatestudentcount(value) {
+	var target = document.getElementById('rar_student_count');
+	target.innerHTML = value;
+}
+function deleteReflekLine(row)
+	{
+		var i=row.parentNode.parentNode;
+		i.parentNode.removeChild(i) 
+	}
+function addReflekLine(row,id)
+	{
+		var my=row.parentNode.parentNode;
+		let newi = my.cloneNode(true);
+
+		var button = document.getElementById("rar-action-"+id);
+		button.innerHTML = "<button type='button' class='btn btn-primary btn-sm' onClick='deleteEvaLine(this);return false;'>Hapus</button>";
+		
+		var newid = parseInt(id);
+		newid++;
+		//alert (newid);
+		
+        var InputType = newi.getElementsByTagName("input");
+
+        for (var i=0; i<InputType.length; i++){
+         if( InputType[i].type=='checkbox'){
+            InputType[i].checked = false;  
+        }else{
+           InputType[i].value='';               
+            }
+        }
+		
+		var html = newi.innerHTML;
+		
+		
+		var oldtext = "\\[rar\\]\\["+id+"\\]";
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "[rar]["+newid+"]");
+		
+		oldtext = "select_(\\d+)-"+id;
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "select_$1"+"-"+newid);	
+		
+		oldtext = "\\(this,"+id+"\\)";
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "(this,"+newid+")");	
+
+		oldtext = "rar-action-"+id;
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "rar-action-"+newid);	
+
+		oldtext = "kiraPeratusReflek\\("+id+"\\)";
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "kiraPeratusReflek("+newid+")");	
+
+		oldtext = "rar_capaisasaran_"+id;
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "rar_capaisasaran_"+newid);	
+
+		oldtext = "rar_peratusmurid_"+id;
+		var sRegExInput = new RegExp(oldtext, "g");    
+		html = html.replace(sRegExInput, "rar_peratusmurid_"+newid);	
+
+
+		newi.id = "rar-row-"+newid;
+		newi.innerHTML = html;
+		
+
+		my.parentNode.appendChild(newi) 
+	
+		var peratusmurid = document.getElementById("rar_peratusmurid_"+newid);
+		peratusmurid.innerHTML = "";
+	
+		var divchosen = document.getElementById("rar-row-"+newid).getElementsByClassName("div-chosen-select");
+		for (var i=0; i<divchosen.length; i++){
+			var spanelement = divchosen[i].getElementsByTagName("span");
+			for (var j=0; j<spanelement.length; j++){
+				//alert(spanelement[j].innerHTML);
+				spanelement[j].parentNode.removeChild(spanelement[j]);
+			}	
+			var selectelement =  divchosen[i].getElementsByTagName("select");
+			for (var j=0; j<selectelement.length; j++){
+				selectelement[j].classList.remove("select2-hidden-accessible");
+				
+				var thiselementid = selectelement[j].id;
+				//alert (thiselementid);
+				$('#'+thiselementid).select2({tags: true});
+			}
+		}
+
+	
+		
+	}
+function kiraPeratusReflek(id) {
+	var source = document.getElementById('rar_capaisasaran_'+id).value;
+	var target = document.getElementById('rar_peratusmurid_'+id);
+	var pembahagi = document.getElementById('rar_student_attendance').innerText;
+	if ((pembahagi) && (pembahagi>0)) {
+		var peratus = ((source/pembahagi) * 100).toFixed(1);
+		target.innerHTML = peratus+"%";	
+	}
+}
+function adjustViewport() {
+    const meta = document.querySelector('meta[name="viewport"]');
+    const content = document.querySelector('.miw_resizeable');
+
+	const layoutWidth = content.offsetWidth;
+    const screenWidth = document.documentElement.clientWidth;
+	//alert('layoutWidth='+layoutWidth);
+	//alert('screenWidth='+screenWidth);
+	
+	//alert('innerWidth='+window.innerWidth);
+	//alert('offsetWidth='+content.offsetWidth);
+    const needsScaling = content.offsetWidth > window.innerWidth;
+
+
+    //if (layoutWidth > screenWidth) {
+	if (screenWidth < 767) {
+        meta.setAttribute(
+            'content',
+            'width=device-width, initial-scale=0.5, maximum-scale=1, user-scalable=yes'
+        );
+    } else {
+        meta.setAttribute(
+            'content',
+            'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes'
+        );
+    }
+}
+
+//window.addEventListener('load', adjustViewport);
+//window.addEventListener('resize', adjustViewport);
+
+</script>
+
+
+</body></html>

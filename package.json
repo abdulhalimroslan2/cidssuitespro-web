@@ -1,21 +1,18 @@
 {
-  "name": "cids-backend",
+  "name": "cids-license-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "generate-keys": "node scripts/generate-keys.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@sparticuz/chromium": "^149.0.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "playwright-core": "^1.61.1"
+    "@supabase/supabase-js": "^2.45.0",
+    "next": "^14.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
   }
 }

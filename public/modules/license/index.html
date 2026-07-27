@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIDS Suites Pro - Aktifkan Lesen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="license.css">
+</head>
+<body>
+    <div class="bg-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="license-container">
+        <!-- Logo & Branding -->
+        <div class="brand-section">
+            <img src="../../assets/CIDS-NEW-GEN ICON.png" alt="CIDS Logo" class="brand-logo" onerror="this.style.display='none'">
+            <div class="brand-text">
+                <h1 class="brand-name">CIDS SUITES PRO</h1>
+                <p class="brand-tagline">AI Assists. Less Admin. More Teaching.</p>
+            </div>
+        </div>
+
+        <!-- Expired Notice -->
+        <div class="expired-notice" id="expired-notice">
+            <div class="expired-icon">⏰</div>
+            <div class="expired-text">
+                <h3>Tempoh Trial Telah Tamat</h3>
+                <p>Tempoh percubaan 30 hari anda telah tamat. Masukkan license key untuk terus menggunakan CIDS Suites Pro.</p>
+            </div>
+        </div>
+
+        <!-- License Card -->
+        <div class="license-card">
+            <div class="card-header">
+                <div class="lock-icon">🔐</div>
+                <h2>Aktifkan Lesen</h2>
+                <p>Masukkan license key anda di bawah</p>
+            </div>
+
+            <div class="key-input-section">
+                <label for="license-key-input" class="key-label">License Key</label>
+                <div class="key-input-wrapper">
+                    <input 
+                        type="text" 
+                        id="license-key-input"
+                        class="key-input"
+                        placeholder="CIDS-XXXX-XXXX-XXXX"
+                        maxlength="19"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <div class="key-format-hint">Format: CIDS-XXXX-XXXX-XXXX</div>
+                </div>
+
+                <!-- Status message -->
+                <div class="status-message" id="status-message" style="display:none;"></div>
+
+                <!-- Activate button -->
+                <button class="activate-btn" id="activate-btn" onclick="handleActivate()">
+                    <span class="btn-text">Aktifkan Sekarang</span>
+                    <span class="btn-loader" style="display:none;">
+                        <span class="spinner"></span>
+                        Mengesahkan...
+                    </span>
+                </button>
+            </div>
+
+            <div class="divider"></div>
+
+
+
+        <!-- Contact Section -->
+        <div class="contact-section">
+            <p>Belum ada license key?</p>
+            <div class="contact-buttons">
+                <button class="contact-btn telegram" onclick="openTelegram()">
+                    ✈️ Telegram: @halimroslan
+                </button>
+                <button class="contact-btn tiktok" onclick="openTiktok()">
+                    🎵 TikTok: @halim_roslan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-format input to CIDS-XXXX-XXXX-XXXX
+        const input = document.getElementById('license-key-input');
+        
+        input.addEventListener('input', function(e) {
+            let val = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            
+            // Pastikan prefix CIDS
+            if (val.length >= 4 && val.substring(0, 4) !== 'CIDS') {
+                // Jika user taip tanpa prefix, tambah prefix
+                if (!val.startsWith('CIDS')) {
+                    val = 'CIDS' + val.replace('CIDS', '');
+                }
+            }
+            
+            // Format: CIDS-XXXX-XXXX-XXXX
+            let formatted = '';
+            const chars = val.replace(/^CIDS/, '');
+            formatted = 'CIDS';
+            
+            if (chars.length > 0) formatted += '-' + chars.substring(0, 4);
+            if (chars.length > 4) formatted += '-' + chars.substring(4, 8);
+            if (chars.length > 8) formatted += '-' + chars.substring(8, 12);
+            
+            this.value = formatted;
+            
+            // Update button state
+            const isComplete = formatted.length === 19;
+            document.getElementById('activate-btn').disabled = !isComplete;
+            
+            // Clear status
+            hideStatus();
+        });
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') handleActivate();
+        });
+
+
+
+        async function handleActivate() {
+            const key = input.value.trim();
+            
+            if (!key || key.length < 19) {
+                showStatus('❌ Sila masukkan license key yang lengkap.', 'error');
+                return;
+            }
+
+            setLoading(true);
+            showStatus('⏳ Mengesahkan key dengan server...', 'info');
+
+            try {
+                const result = await window.electronAPI.activateLicense(key);
+                
+                if (result.success) {
+                    showStatus('✅ ' + (result.message || 'Lesen berjaya diaktifkan!'), 'success');
+                    setLoading(false);
+                    
+                    // Tunggu 1.5s lepas tu reload app
+                    setTimeout(() => {
+                        window.electronAPI.reloadApp();
+                    }, 1500);
+                } else {
+                    setLoading(false);
+                    
+                    let errorMsg = result.message || 'Aktivasi gagal.';
+                    if (result.code === 'MAX_DEVICES') {
+                        errorMsg = '⚠️ ' + errorMsg;
+                    } else if (result.code === 'NETWORK_ERROR') {
+                        errorMsg = '🌐 Tiada sambungan internet. Sila semak sambungan anda.';
+                    } else {
+                        errorMsg = '❌ ' + errorMsg;
+                    }
+                    
+                    showStatus(errorMsg, result.code === 'MAX_DEVICES' ? 'warning' : 'error');
+                }
+            } catch(e) {
+                setLoading(false);
+                showStatus('❌ Ralat tidak dijangka: ' + e.message, 'error');
+            }
+        }
+
+        function setLoading(loading) {
+            const btn = document.getElementById('activate-btn');
+            const btnText = btn.querySelector('.btn-text');
+            const btnLoader = btn.querySelector('.btn-loader');
+            
+            btn.disabled = loading;
+            btnText.style.display = loading ? 'none' : 'flex';
+            btnLoader.style.display = loading ? 'flex' : 'none';
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status-message');
+            el.textContent = msg;
+            el.className = 'status-message status-' + type;
+            el.style.display = 'block';
+        }
+
+        function hideStatus() {
+            document.getElementById('status-message').style.display = 'none';
+        }
+
+        function openTelegram() {
+            window.electronAPI.openExternal('https://t.me/halimroslan');
+        }
+
+        function openTiktok() {
+            window.electronAPI.openExternal('https://tiktok.com/@halim_roslan');
+        }
+
+        // Init
+        document.getElementById('activate-btn').disabled = true;
+    </script>
+</body>
+</html>

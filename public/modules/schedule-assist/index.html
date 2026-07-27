@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPH Jadual Importer</title>
+    <!-- Modern Typography from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --theme-color: #1ba549;
+            --theme-color-hover: #15803d;
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+        }
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 0; 
+            padding: 24px 40px;
+            background: #080016;
+            box-sizing: border-box; 
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+        .container { 
+            width: 100%; 
+            max-width: 900px; 
+            display: flex; 
+            flex-direction: column; 
+            margin: 0 auto;
+            animation: floatIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .banner {
+            width: 100%;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            display: block;
+        }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            margin-bottom: 24px;
+        }
+        
+        @keyframes floatIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .control-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--text-main);
+        }
+        
+        .label-desc {
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .step-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .step-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--theme-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+        
+        .step-content {
+            flex-grow: 1;
+        }
+        .input-field {
+            width: 100%; padding: 12px 16px; font-size: 15px; font-family: inherit; color: var(--text-main);
+            background: white; border: 1px solid #e1e1e1; border-radius: 10px; box-sizing: border-box; transition: all 0.2s ease; outline: none; margin-bottom: 12px;
+        }
+        .input-field:focus { border-color: var(--theme-color); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
+        .save-btn {
+            background: #f2f2f7; color: var(--theme-color); border: 1px solid #d1d1d6; padding: 10px 16px; font-size: 14px;
+            border-radius: 10px; cursor: pointer; transition: all 0.2s ease; font-weight: 600; width: 100%; margin-top: 5px;
+        }
+        .save-btn:hover { background: #e5e5ea; }
+        button { 
+            background: var(--theme-color); color: white; border: none; padding: 16px 30px; font-size: 17px; 
+            border-radius: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-weight: 600; 
+            letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); width: 100%; margin-bottom: 25px; position: relative; overflow: hidden;
+        }
+        button:hover:not(:disabled) { background: var(--theme-color-hover); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4); }
+        button:active:not(:disabled) { transform: translateY(1px); }
+        button:disabled { background: #d1d1d6; cursor: not-allowed; box-shadow: none; color: #f2f2f7; transform: none; }
+        .terminal-wrapper {
+            background: #1e1e1e; border-radius: 12px; padding: 2px; background-clip: padding-box;
+            border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.2); flex: 1; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .terminal-header { background: #2d2d2d; padding: 8px 15px; display: flex; gap: 6px; align-items: center; }
+        .traffic-light { width: 12px; height: 12px; border-radius: 50%; }
+        .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
+        .terminal-title { color: #999; font-size: 12px; font-family: monospace; margin-left: 10px; }
+        #logs { 
+            background-color: #1e1e1e; color: #a9dc76; padding: 15px; font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            flex: 1; overflow-y: auto; white-space: pre-wrap; font-size: 13px; line-height: 1.5; max-height: 200px;
+        }
+        .log-entry { margin-bottom: 4px; }
+        .log-info { color: #78dce8; } .log-success { color: #a9dc76; } .log-error { color: #ff6188; } .log-warning { color: #ffd866; }
+        #logs::-webkit-scrollbar { width: 8px; }
+        #logs::-webkit-scrollbar-track { background: #1e1e1e; }
+        #logs::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        #logs::-webkit-scrollbar-thumb:hover { background: #555; }
+        .table-container { display: none; width: 100%; margin-top: 15px; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #d1d1d6; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f9f9f9; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        td input { width: 100%; padding: 6px; border: 1px solid #e1e1e1; border-radius: 6px; font-family: inherit; font-size: 12px; box-sizing: border-box; }
+        td input:focus { border-color: var(--theme-color); outline: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="../../assets/SCHEDULE AI ASSIST BANNER.png" class="banner" alt="Schedule AI Assist">
+        
+        <div class="card">
+            <div id="imageInputGroup" class="control-group">
+                <div class="step-row" style="margin-bottom: 0;">
+                    <div class="step-badge">1</div>
+                    <div class="step-content">
+                        <label>Jadual Waktu</label>
+                <div id="pasteArea" style="border: 2px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; color: var(--text-secondary); margin-bottom: 10px; transition: all 0.2s ease; font-size: 13px; background: #f8fafc;">
+                    Klik sini untuk memuat naik atau <br> Paste (Ctrl/Cmd+V) gambar jadual anda
+                </div>
+                <button id="clearScheduleBtn" class="save-btn" style="display: none; border-color: #ef4444; color: #ef4444; margin-top: 0; margin-bottom: 10px; border-radius: 8px; padding: 10px;">Buang Jadual Tersimpan</button>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                <img id="imagePreview" style="display: none; width: 100%; border-radius: 10px; border: 1px solid #d1d1d6; cursor: pointer;" alt="Pratonton Jadual">
+                    </div>
+                </div>
+            </div>
+
+            <button id="startBtn">✨ Analisis AI Jadual Waktu</button>
+            
+            <div id="verificationContainer" class="control-group" style="display: none;">
+                <div class="step-row" style="margin-bottom: 0; margin-top: 20px;">
+                    <div class="step-badge">2</div>
+                    <div class="step-content">
+                        <label style="color: var(--text-main);">Semakan Jadual</label>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <p style="font-size: 12px; color: var(--text-secondary); margin: 0; font-weight: 500; max-width: 70%;">Sila pastikan nama Kelas dan Subjek ditulis penuh (cth: "MM" jadi "Matematik", "5B" jadi "5 BESTARI").</p>
+                            <button id="fetchClassesBtn" style="font-size: 11px; padding: 6px 10px; background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; border-radius: 4px; cursor: pointer; white-space: nowrap;">🔄 Muat turun senarai kelas di CIDS</button>
+                        </div>
+                <div class="table-container" style="display: block; border-radius: 8px;">
+                    <table>
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th>Hari</th>
+                                <th>Masa</th>
+                                <th>Kelas</th>
+                                <th>Subjek</th>
+                            </tr>
+                        </thead>
+                        <tbody id="verificationTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <button id="submitBtn" style="margin-top: 20px; margin-bottom: 0;">Import ke CIDS</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="terminal-wrapper">
+            <div class="terminal-header">
+                <div class="traffic-light red"></div>
+                <div class="traffic-light yellow"></div>
+                <div class="traffic-light green"></div>
+                <span class="terminal-title">Terminal</span>
+            </div>
+            <div id="logs"><span class="log-info">> Sistem sedia untuk bermula...</span><br></div>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const logsDiv = document.getElementById('logs');
+        const pasteArea = document.getElementById('pasteArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const clearScheduleBtn = document.getElementById('clearScheduleBtn');
+        const verificationContainer = document.getElementById('verificationContainer');
+        const verificationTableBody = document.getElementById('verificationTableBody');
+        const imageInputGroup = document.getElementById('imageInputGroup');
+        const fetchClassesBtn = document.getElementById('fetchClassesBtn');
+
+        let scheduleImageBase64 = null;
+        let extractedLessons = [];
+
+        window.electronAPI = window.electronAPI || window.parent.electronAPI;
+        
+        let globalSettings = {};
+        
+        async function loadCentralSettings() {
+            try {
+                const settings = await window.electronAPI.getSettings();
+                if (settings) {
+                    globalSettings.username = settings.username || '';
+                    if (settings.password) {
+                        globalSettings.password = await window.electronAPI.decryptData(settings.password);
+                    }
+                    if (settings.apiKey) {
+                        globalSettings.apiKey = await window.electronAPI.decryptData(settings.apiKey);
+                    }
+                }
+            } catch (e) {
+                console.error("Gagal memuatkan tetapan:", e);
+            }
+        }
+        loadCentralSettings();
+
+        function checkSavedSchedule() {
+            const savedImage = localStorage.getItem('savedScheduleImage');
+            const savedLessonsJson = localStorage.getItem('savedLessons');
+            
+            if (savedImage) {
+                scheduleImageBase64 = savedImage;
+                pasteArea.innerHTML = '<span style="color: #27c93f; font-weight: bold;">✓ Jadual Tersimpan Ditemui</span><br>Anda tidak perlu memuat naik gambar baru melainkan ingin mengubahnya (Klik untuk tukar).';
+                pasteArea.style.borderColor = '#27c93f';
+                pasteArea.style.background = 'rgba(39, 201, 63, 0.05)';
+                clearScheduleBtn.style.display = 'block';
+                
+                if (savedLessonsJson) {
+                    try {
+                        extractedLessons = JSON.parse(savedLessonsJson);
+                        if (extractedLessons && extractedLessons.length > 0) {
+                            renderVerificationTable();
+                        }
+                    } catch (e) {
+                        console.error('Error parsing saved lessons', e);
+                    }
+                }
+            } else {
+                scheduleImageBase64 = null;
+                extractedLessons = [];
+                pasteArea.innerHTML = 'Klik sini untuk memuat naik atau <br> Paste (Ctrl/Cmd+V) gambar jadual anda';
+                pasteArea.style.borderColor = '#d1d1d6';
+                pasteArea.style.background = 'transparent';
+                clearScheduleBtn.style.display = 'none';
+                verificationContainer.style.display = 'none';
+                startBtn.style.display = 'block';
+            }
+        }
+        
+        checkSavedSchedule();
+
+        clearScheduleBtn.addEventListener('click', () => {
+            localStorage.removeItem('savedScheduleImage');
+            localStorage.removeItem('savedLessons');
+            extractedLessons = [];
+            pasteArea.style.display = 'block';
+            imagePreview.style.display = 'none';
+            verificationContainer.style.display = 'none';
+            startBtn.style.display = 'block';
+            checkSavedSchedule();
+        });
+
+        pasteArea.addEventListener('click', () => fileInput.click());
+        imagePreview.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                processImage(e.target.files[0]);
+            }
+        });
+
+        document.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file') {
+                    const blob = item.getAsFile();
+                    processImage(blob);
+                }
+            }
+        });
+
+        function processImage(blob) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                scheduleImageBase64 = event.target.result.split(',')[1];
+                imagePreview.src = event.target.result;
+                imagePreview.style.display = 'block';
+                pasteArea.style.display = 'none';
+                clearScheduleBtn.style.display = 'block';
+                
+                // Jika gambar baru, buang jadual semakan lama
+                localStorage.setItem('savedScheduleImage', scheduleImageBase64);
+                localStorage.removeItem('savedLessons');
+                extractedLessons = [];
+                verificationContainer.style.display = 'none';
+                startBtn.style.display = 'block';
+            };
+            reader.readAsDataURL(blob);
+        }
+
+        function appendLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            
+            let prefix = '> ';
+            if (message.includes('ERROR') || message.includes('Ralat')) {
+                entry.className = 'log-entry log-error';
+                prefix = '✖ ';
+            } else if (message.includes('Berjaya') || message.includes('successfully') || message.includes('selesai')) {
+                entry.className = 'log-entry log-success';
+                prefix = '✓ ';
+            }
+            
+            entry.innerText = prefix + message;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        let isSubmitting = false;
+        
+        fetchClassesBtn.addEventListener('click', async () => {
+            fetchClassesBtn.innerText = '⏳ Sedang Mengambil...';
+            fetchClassesBtn.disabled = true;
+            try {
+                const credentials = { username: globalSettings.username, password: globalSettings.password };
+                const res = await window.electronAPI.fetchClassesFromAsie(credentials);
+                if (res && res.success && res.classes) {
+                    localStorage.setItem('savedAsieClasses', JSON.stringify(res.classes));
+                    appendLog('✓ Berjaya memuat turun senarai kelas dari ASIE!', 'success');
+                    renderVerificationTable();
+                } else {
+                    appendLog('Gagal mengambil kelas: ' + (res?.error || 'Ralat tidak diketahui'), 'error');
+                }
+            } catch (e) {
+                appendLog('Ralat mengambil kelas: ' + e.message, 'error');
+            } finally {
+                fetchClassesBtn.innerText = '🔄 Muat turun senarai kelas di CIDS';
+                fetchClassesBtn.disabled = false;
+            }
+        });
+
+        startBtn.addEventListener('click', async () => {
+            if (isSubmitting) return;
+            isSubmitting = true;
+
+            startBtn.disabled = true;
+            startBtn.innerText = 'AI Sedang Menganalisis...';
+            
+            logsDiv.innerHTML = '';
+            appendLog('Menghantar imej ke Gemini AI...', 'info');
+            
+            if (!globalSettings.apiKey || globalSettings.apiKey.trim() === '') {
+                appendLog('AMARAN: Gemini API Key tidak dijumpai di tetapan pusat. Sistem akan cuba menggunakan Master API Key sebagai sandaran.', 'warning');
+            }
+            if (!scheduleImageBase64) {
+                appendLog('RALAT: Sila muat naik atau paste gambar jadual waktu.', 'error');
+                resetStartBtn();
+                return;
+            }
+            
+            try {
+                const response = await window.electronAPI.extractScheduleAi({ 
+                    apiKey: globalSettings.apiKey,
+                    imageBase64: scheduleImageBase64
+                });
+                
+                if (response.success && response.lessons && response.lessons.length > 0) {
+                    appendLog(`✓ Berjaya ekstrak ${response.lessons.length} kelas. Menunggu pengesahan pengguna.`, 'success');
+                    
+                    const dayOrder = { 'isnin': 1, 'selasa': 2, 'rabu': 3, 'khamis': 4, 'jumaat': 5, 'sabtu': 6, 'ahad': 7 };
+                    
+                    extractedLessons = response.lessons.sort((a, b) => {
+                        const dayA = (a.day || '').toLowerCase().trim();
+                        const dayB = (b.day || '').toLowerCase().trim();
+                        
+                        if (dayOrder[dayA] !== dayOrder[dayB]) {
+                            return (dayOrder[dayA] || 99) - (dayOrder[dayB] || 99);
+                        }
+                        
+                        const timeA = (a.time || '').toLowerCase().trim();
+                        const timeB = (b.time || '').toLowerCase().trim();
+                        return timeA.localeCompare(timeB);
+                    });
+                    
+                    // Simpan sementara hasil analisis AI
+                    localStorage.setItem('savedLessons', JSON.stringify(extractedLessons));
+                    
+                    renderVerificationTable();
+                } else {
+                    appendLog('RALAT: Tiada jadual dikesan atau ' + (response.error || 'Ralat tidak diketahui'), 'error');
+                    resetStartBtn();
+                }
+            } catch (error) {
+                appendLog('RALAT: ' + error.message, 'error');
+                resetStartBtn();
+            }
+        });
+
+        function resetStartBtn() {
+            startBtn.disabled = false;
+            startBtn.innerText = '1. Analisis AI Jadual Waktu';
+            isSubmitting = false;
+        }
+
+        function renderVerificationTable() {
+            verificationTableBody.innerHTML = '';
+            extractedLessons.forEach((lesson, index) => {
+                const tr = document.createElement('tr');
+                
+                // Hari
+                const tdDay = document.createElement('td');
+                tdDay.innerText = lesson.day;
+                
+                // Masa
+                const tdTime = document.createElement('td');
+                tdTime.innerText = lesson.time;
+                
+                // Kelas Input
+                const tdClass = document.createElement('td');
+                const savedClassesStr = localStorage.getItem('savedAsieClasses');
+                
+                if (savedClassesStr) {
+                    const savedClasses = JSON.parse(savedClassesStr);
+                    const selectClass = document.createElement('select');
+                    selectClass.style.width = '100%';
+                    selectClass.style.padding = '8px';
+                    selectClass.style.border = '1px solid #d1d5db';
+                    selectClass.style.borderRadius = '4px';
+                    selectClass.dataset.index = index;
+                    
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = lesson.session_text;
+                    defaultOpt.text = lesson.session_text + ' (Dari Gambar)';
+                    selectClass.appendChild(defaultOpt);
+                    
+                    savedClasses.forEach(cls => {
+                        const opt = document.createElement('option');
+                        opt.value = cls;
+                        opt.text = cls;
+                        if (cls.toLowerCase().replace(/\s+/g,'') === lesson.session_text.toLowerCase().replace(/\s+/g,'')) {
+                            opt.selected = true;
+                        }
+                        selectClass.appendChild(opt);
+                    });
+                    
+                    selectClass.addEventListener('change', (e) => {
+                        extractedLessons[index].session_text = e.target.value.trim();
+                        localStorage.setItem('savedLessons', JSON.stringify(extractedLessons));
+                    });
+                    tdClass.appendChild(selectClass);
+                } else {
+                    const inputClass = document.createElement('input');
+                    inputClass.type = 'text';
+                    inputClass.value = lesson.session_text;
+                    inputClass.dataset.index = index;
+                    inputClass.dataset.field = 'session_text';
+                    
+                    inputClass.addEventListener('change', (e) => {
+                        extractedLessons[index].session_text = e.target.value.trim();
+                        localStorage.setItem('savedLessons', JSON.stringify(extractedLessons));
+                    });
+                    tdClass.appendChild(inputClass);
+                }
+                
+                // Subject Input
+                const tdSubject = document.createElement('td');
+                const inputSubject = document.createElement('input');
+                inputSubject.type = 'text';
+                inputSubject.value = lesson.subject_text;
+                inputSubject.dataset.index = index;
+                inputSubject.dataset.field = 'subject_text';
+                
+                // Auto-save on change
+                inputSubject.addEventListener('change', (e) => {
+                    extractedLessons[index].subject_text = e.target.value.trim();
+                    localStorage.setItem('savedLessons', JSON.stringify(extractedLessons));
+                });
+                tdSubject.appendChild(inputSubject);
+                
+                tr.appendChild(tdDay);
+                tr.appendChild(tdTime);
+                tr.appendChild(tdClass);
+                tr.appendChild(tdSubject);
+                
+                verificationTableBody.appendChild(tr);
+            });
+            
+            startBtn.style.display = 'none';
+            // Kekalkan imageInputGroup supaya pengguna boleh buang jadual tersimpan
+            verificationContainer.style.display = 'block';
+            isSubmitting = false;
+        }
+
+        submitBtn.addEventListener('click', () => {
+            if (isSubmitting) return;
+            isSubmitting = true;
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Menghantar ke ASIE...';
+
+            // Gather inputs (in case change event missed)
+            const inputs = verificationTableBody.querySelectorAll('input');
+            inputs.forEach(input => {
+                const idx = parseInt(input.dataset.index);
+                const field = input.dataset.field;
+                extractedLessons[idx][field] = input.value.trim();
+            });
+            
+            // Simpan suntingan akhir
+            localStorage.setItem('savedLessons', JSON.stringify(extractedLessons));
+
+            appendLog('Menerima pengesahan. Menjalankan automasi Playwright...', 'info');
+            
+            const credentials = {
+                username: globalSettings.username,
+                password: globalSettings.password
+            };
+            
+            if (!credentials.username || !credentials.password) {
+                appendLog('RALAT: Maklumat log masuk tidak lengkap. Sila semak SETTING.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerText = '2. Import ke CIDS';
+                isSubmitting = false;
+                return;
+            }
+
+            window.electronAPI.submitJadual({ 
+                credentials,
+                lessons: extractedLessons
+            });
+        });
+
+        window.electronAPI.onAutomationLog((message) => {
+            appendLog(message);
+        });
+
+        window.electronAPI.onAutomationDone(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Selesai! Import Berjaya';
+            submitBtn.style.background = '#27c93f';
+            appendLog('Tugas import jadual selesai!', 'success');
+            
+            setTimeout(() => {
+                submitBtn.innerText = '2. Import ke CIDS';
+                submitBtn.style.background = 'var(--theme-color)';
+                verificationContainer.style.display = 'none';
+                startBtn.style.display = 'block';
+                imageInputGroup.style.display = 'block';
+                resetStartBtn();
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

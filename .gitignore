@@ -1,3 +1,10 @@
 node_modules/
+.next/
+.env.local
 .env
+
+# Generated key files - JANGAN commit ke GitHub!
+license_keys_*.sql
+license_keys_*.json
+license_keys_*.csv
 .vercel

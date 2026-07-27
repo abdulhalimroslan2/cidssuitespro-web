@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPT Assist</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --theme-color: #7c3aed;
+            --theme-color-hover: #6366f1;
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 0; 
+            padding: 24px 40px; 
+            background: #080016; 
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: floatIn 0.5s ease forwards;
+        }
+
+        @keyframes floatIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Banner */
+        .banner-container {
+            width: 100%;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .banner-image {
+            width: 100%;
+            height: auto;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            display: block;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #fbbf24;
+        }
+
+        .status-dot.connected { background: var(--success); }
+        .status-dot.error { background: var(--error); }
+
+        .status-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .status-text a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .card {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 28px 32px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .step-num {
+            width: 32px; height: 32px;
+            min-width: 32px;
+            background: var(--theme-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+            margin-top: 2px;
+        }
+
+        .step-info h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 4px;
+            color: var(--text-main);
+        }
+
+        .required { color: var(--error); }
+
+        .step-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .select-wrapper select {
+            width: 100%;
+            padding: 14px 16px;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 15px;
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .select-wrapper select:focus {
+            outline: none;
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+        }
+
+        .select-arrow {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 22px; height: 22px;
+            fill: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        .open-btn {
+            background: var(--theme-color);
+            color: white; 
+            border: none; 
+            padding: 16px 30px; 
+            font-size: 16px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+            font-weight: 700; 
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+
+        .open-btn:hover:not(:disabled) {
+            background: var(--theme-color-hover); 
+            transform: translateY(-2px);
+        }
+
+        .open-btn:disabled {
+            background: #d1d1d6; 
+            cursor: not-allowed; 
+            box-shadow: none;
+            color: #f2f2f7;
+        }
+
+        /* Step 2 Section (Hidden until user clicks Buka RPT & Mulakan AI Assist) */
+        #step2Section {
+            width: 100%;
+            display: none;
+        }
+
+        .back-to-step1-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .back-to-step1-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .gems-guide-card {
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .gems-guide-card h3 {
+            margin-top: 0;
+            color: #1e293b;
+            font-size: 16px;
+            margin-bottom: 14px;
+        }
+
+        .gems-guide-card ol {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .gems-btn-group {
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-gems-primary {
+            background: #2563eb; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; text-decoration: none;
+        }
+        .btn-gems-secondary {
+            background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px;
+        }
+
+        .form-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #1e293b;
+        }
+
+        .form-group input[type="text"], .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .footer-note {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 500;
+        }
+
+        .footer-note svg {
+            width: 14px; height: 14px;
+            fill: rgba(255,255,255,0.5);
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 12px 10px; }
+            .card, .form-card, .gems-guide-card { padding: 20px 16px; border-radius: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Banner Image -->
+        <div class="banner-container">
+            <img src="../../assets/RPT_AI_ASSIST_BANNER.png" alt="RPT Assist Banner" class="banner-image">
+        </div>
+
+        <!-- Connection Status -->
+        <div class="status-bar">
+            <div class="status-dot" id="statusDot"></div>
+            <span class="status-text" id="statusText">Menyambung ke CIDS...</span>
+        </div>
+
+        <!-- FASA 1: SKRIN AWAL PILIH RPT (Papar Sahaja Pada Mulanya) -->
+        <div class="card" id="step1Card">
+            <div class="step-header">
+                <div class="step-num">1</div>
+                <div class="step-info">
+                    <h2>Pilih RPT <span class="required">*</span></h2>
+                    <p>Pilih Rancangan Pelajaran Tahunan yang ingin dikerjakan.</p>
+                </div>
+            </div>
+
+            <div class="select-wrapper">
+                <select id="rptDropdown">
+                    <option value="" disabled selected>Sila Pilih RPT...</option>
+                </select>
+                <svg class="select-arrow" viewBox="0 0 24 24">
+                    <path d="M7 10l5 5 5-5z"/>
+                </svg>
+            </div>
+
+            <button class="open-btn" id="openRptBtn" disabled>
+                Buka RPT & Mulakan AI Assist
+            </button>
+        </div>
+
+        <!-- FASA 2: PANEL PERMULAAN AUTOMASI (Hanya Ditunjukkan Selepas RPT Dipilih) -->
+        <div id="step2Section" style="display:none; width:100%;">
+            <button class="back-to-step1-btn" id="backToStep1Btn">
+                ← Kembali Pilih RPT Lain
+            </button>
+
+            <!-- Panduan Gemini Gems -->
+            <div class="gems-guide-card">
+                <h3>Panduan Penjanaan Jadual RPT (Gemini Gems)</h3>
+                <ol>
+                    <li>Klik butang di bawah untuk membuka pelayar luar Gemini Gems.</li>
+                    <li>Upload <strong>DSKP</strong> dan <strong>Takwim Persekolahan</strong> (mengandungi Cuti dan Peperiksaan).</li>
+                    <li>Copy prompt di bawah dan paste di Gemini Gems.</li>
+                    <li>Download dan buka fail CSV yang dijana, kemudian copy semua jadual RPT di dalamnya.</li>
+                    <li>Paste pada ruangan Teks / CSV di Langkah 3 (di bawah).</li>
+                    <li>Klik pada <strong>Imbas RPT Automatik</strong>, semak data, dan tekan butang <strong>Salin RPT ke CIDS</strong>.</li>
+                </ol>
+
+                <div class="gems-btn-group">
+                    <a href="https://gemini.google.com/gem/1ZPoGMnnlUPzjYXAbiU0sVcHf8EoRu4Qh?usp=sharing" target="_blank" class="btn-gems-primary">
+                        Buka Gemini Gems
+                    </a>
+                    <button class="btn-gems-secondary" id="copyUrlBtn">Copy URL</button>
+                    <button class="btn-gems-secondary" id="copyPromptBtn">Copy Prompt AI</button>
+                </div>
+                <textarea id="hiddenPrompt" style="display:none;">Sila baca dan fahami lampiran Takwim dan DSKP ini. Keluarkan jadual lengkap perancangan RPT sepanjang tahun. Format jadual mestilah mempunyai kolum ini sahaja: Minggu, Tarikh, Tema, Bidang Pembelajaran, Standard Kandungan, Standard Pembelajaran. AMAT PENTING: Jika terdapat berbilang Standard Kandungan (SK) atau Standard Pembelajaran (SP) dalam minggu yang sama, ASINGKAN ia menjadi rekod/baris yang BERBEZA (duplicate minggu). 1 baris hanya boleh memuatkan maksimum 1 SK dan 1 SP sahaja! NOTA TAMBAHAN: Tiada sebarang Standard Pembelajaran untuk minggu pertama (Minggu Pertama Persekolahan) dan mana-mana minggu peperiksaan bagi semua darjah/tingkatan. Semua Standard Pembelajaran mesti dihabiskan sebelum peperiksaan akhir tahun / peperiksaan percubaan SPM (bagi Tingkatan 5). Ikut 100% sama bahasa dalam DSKP. Data akhir dalam CSV.</textarea>
+            </div>
+
+            <!-- Form Cards (Step 1: Nama Rekod, Step 2: Tampal Teks) -->
+            <div class="form-card">
+                <div class="form-group">
+                    <label for="namaRekod">1. Nama Rekod <span class="required">*</span></label>
+                    <input type="text" id="namaRekod" placeholder="Contoh: MTT2M16">
+                    <div id="namaRekodHelp" style="font-size:12px; color:#64748b; margin-top:4px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label for="csvData">2. Tampal (Paste) Teks / CSV</label>
+                        <button id="browseBtn" style="background:none; border:none; color:#64748b; font-weight:600; cursor:pointer; font-size:13px;">Upload Fail</button>
+                    </div>
+                    <input type="file" id="imageFile" accept="image/*,application/pdf,.csv,.txt,.docx" style="display:none;">
+                    <textarea id="csvData" rows="6" placeholder="Tampal jadual RPT di sini..."></textarea>
+                </div>
+
+                <button id="processBtn" class="open-btn" style="background:#7c3aed; margin-top:10px;">
+                    Imbas RPT Automatik
+                </button>
+                <div id="status" style="margin-top:10px; font-size:13px; font-weight:600; text-align:center;"></div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            Data anda selamat dan tidak akan disimpan tanpa kebenaran.
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const api = window.electronAPI || window.parent.electronAPI;
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const rptDropdown = document.getElementById('rptDropdown');
+            const openRptBtn = document.getElementById('openRptBtn');
+
+            const step1Card = document.getElementById('step1Card');
+            const step2Section = document.getElementById('step2Section');
+            const backToStep1Btn = document.getElementById('backToStep1Btn');
+
+            const copyUrlBtn = document.getElementById('copyUrlBtn');
+            const copyPromptBtn = document.getElementById('copyPromptBtn');
+            const hiddenPrompt = document.getElementById('hiddenPrompt');
+
+            // Copy handlers
+            if (copyUrlBtn) {
+                copyUrlBtn.addEventListener('click', () => {
+                    const url = "https://gemini.google.com/gem/1ZPoGMnnlUPzjYXAbiU0sVcHf8EoRu4Qh?usp=sharing";
+                    navigator.clipboard.writeText(url).then(() => {
+                        copyUrlBtn.textContent = '✓ Disalin!';
+                        setTimeout(() => copyUrlBtn.textContent = 'Copy URL', 2000);
+                    });
+                });
+            }
+
+            if (copyPromptBtn) {
+                copyPromptBtn.addEventListener('click', () => {
+                    if (hiddenPrompt) {
+                        navigator.clipboard.writeText(hiddenPrompt.value).then(() => {
+                            copyPromptBtn.textContent = '✓ Disalin!';
+                            setTimeout(() => copyPromptBtn.textContent = 'Copy Prompt AI', 2000);
+                        });
+                    }
+                });
+            }
+
+            function populateRptList(list) {
+                rptDropdown.innerHTML = '';
+                if (!list || list.length === 0) {
+                    rptDropdown.innerHTML = '<option value="">Tiada RPT dijumpai</option>';
+                } else {
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = '';
+                    defaultOpt.textContent = 'Sila Pilih RPT...';
+                    rptDropdown.appendChild(defaultOpt);
+                    list.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.url;
+                        opt.textContent = item.title;
+                        rptDropdown.appendChild(opt);
+                    });
+                    openRptBtn.disabled = true;
+                }
+            }
+
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'cached-rpt-list') {
+                    const list = event.data.data;
+                    if (list && list.length > 0) {
+                        statusDot.classList.remove('error');
+                        statusDot.classList.add('connected');
+                        statusText.textContent = 'Berjaya disambungkan ke CIDS';
+                        populateRptList(list);
+                    }
+                }
+            });
+
+            if (api && api.onRptList) {
+                api.onRptList((list) => {
+                    populateRptList(list);
+                });
+            }
+
+            if (api && api.onLoginStatus) {
+                api.onLoginStatus((data) => {
+                    if (data.success) {
+                        statusDot.classList.add('connected');
+                        statusText.textContent = 'Berjaya disambungkan ke CIDS';
+                        const hasItems = rptDropdown.options.length > 1 ||
+                            (rptDropdown.options.length === 1 && rptDropdown.options[0].value !== '');
+                        if (!hasItems) {
+                            rptDropdown.innerHTML = '<option value="">Sedang memuatkan senarai RPT...</option>';
+                        }
+                    } else {
+                        statusDot.classList.add('error');
+                        statusText.textContent = 'Gagal log masuk. Semak ID & Kata Laluan.';
+                    }
+                });
+            }
+
+            window.parent.postMessage({ type: 'request-rpt-cache' }, '*');
+
+            if (api && api.getSettings) {
+                api.getSettings().then(config => {
+                    if (config && config.username && config.password) {
+                        statusText.textContent = 'Sedang log masuk ke CIDS...';
+                        api.login(config.username, config.password).then(result => {
+                            if (!result || !result.started) {
+                                statusDot.classList.add('error');
+                                statusText.innerHTML = 'Tidak berjaya disambungkan ke CIDS. Sila ke <a href="#" onclick="window.parent.postMessage({ type: \'navigate\', id: \'setting\' }, \'*\'); return false;">Menu Setting</a>.';
+                            }
+                        });
+                    } else {
+                        statusDot.classList.add('error');
+                        statusText.innerHTML = 'Tidak berjaya disambungkan ke CIDS. Sila ke <a href="#" onclick="window.parent.postMessage({ type: \'navigate\', id: \'setting\' }, \'*\'); return false;">Menu Setting</a>.';
+                        rptDropdown.innerHTML = '<option value="">Tiada Akses ke CIDS</option>';
+                    }
+                });
+            }
+
+            rptDropdown.addEventListener('change', (e) => {
+                openRptBtn.disabled = !e.target.value;
+            });
+
+            // Transition from Step 1 (Pilih RPT) to Step 2 (Gemini Gems & Form)
+            openRptBtn.addEventListener('click', () => {
+                const url = rptDropdown.value;
+                const selectedText = rptDropdown.options[rptDropdown.selectedIndex] ? rptDropdown.options[rptDropdown.selectedIndex].text : '';
+
+                if (url && api && api.openRpt) {
+                    api.openRpt(url);
+                }
+
+                // Hide Step 1 Card & Reveal Step 2 Section
+                step1Card.style.display = 'none';
+                step2Section.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                // Auto-fill Nama Rekod based on selected RPT
+                const namaInput = document.getElementById('namaRekod');
+                if (namaInput && selectedText) {
+                    let clean = selectedText.replace(/RPT|RANCANGAN|PELAJARAN|TAHUNAN|2024|2025|2026/gi, '').trim();
+                    let codeMatch = selectedText.match(/([A-Z]{2,4}\d{1,2})/i);
+                    if (codeMatch) {
+                        namaInput.value = codeMatch[1].toUpperCase() + "M1";
+                    } else if (clean) {
+                        namaInput.value = clean.substring(0, 8).toUpperCase() + "M1";
+                    }
+                }
+            });
+
+            if (backToStep1Btn) {
+                backToStep1Btn.addEventListener('click', () => {
+                    step2Section.style.display = 'none';
+                    step1Card.style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPH Automator Pro</title>
+    <!-- Modern Typography from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --theme-color: #ea580c;
+            --theme-color-hover: #c2410c;
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 0; 
+            padding: 24px 40px; 
+            background: #080016; 
+            box-sizing: border-box; 
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 900px; 
+            display: flex; 
+            flex-direction: column; 
+            margin: 0 auto;
+            animation: floatIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .banner {
+            width: 100%;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            display: block;
+        }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .right-col {
+            overflow-y: auto;
+            max-height: calc(100vh - 180px);
+            padding-right: 4px;
+        }
+
+        .right-col::-webkit-scrollbar {
+            width: 6px;
+        }
+        .right-col::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .right-col::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            margin-bottom: 24px;
+        }
+
+        @keyframes floatIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--text-main);
+        }
+        
+        .label-desc {
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .step-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .step-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--theme-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(234, 88, 12, 0.4);
+        }
+        
+        .step-content {
+            flex-grow: 1;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: 500;
+            cursor: pointer;
+            text-transform: none;
+            letter-spacing: 0;
+            margin-bottom: 0;
+        }
+
+        .bbm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: 500;
+            cursor: pointer;
+            text-transform: none;
+            letter-spacing: 0;
+            margin-bottom: 0;
+        }
+
+        input[type="date"] {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            font-family: inherit;
+            color: var(--text-main);
+            background: white;
+            border: 1px solid #e1e1e1;
+            border-radius: 10px;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="date"]:focus {
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.1);
+        }
+
+        #datePreview {
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--theme-color);
+            font-weight: 500;
+            text-align: center;
+            background: rgba(234, 88, 12, 0.08);
+            padding: 8px;
+            border-radius: 8px;
+            display: inline-block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 15px;
+            font-family: inherit;
+            color: var(--text-main);
+            background: white;
+            border: 1px solid #e1e1e1;
+            border-radius: 10px;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+            outline: none;
+            margin-bottom: 12px;
+        }
+
+        .input-field:focus {
+            border-color: var(--theme-color);
+            box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.1);
+        }
+
+        .save-btn {
+            background: #f2f2f7;
+            color: var(--theme-color);
+            border: 1px solid #d1d1d6;
+            padding: 10px 16px;
+            font-size: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .save-btn:hover {
+            background: #e5e5ea;
+        }
+
+        button { 
+            background: var(--theme-color);
+            color: white; 
+            border: none; 
+            padding: 16px 30px; 
+            font-size: 17px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-weight: 600; 
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+            width: 100%;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover:not(:disabled) { 
+            background: var(--theme-color-hover); 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(234, 88, 12, 0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        button:disabled { 
+            background: #d1d1d6; 
+            cursor: not-allowed; 
+            box-shadow: none;
+            color: #f2f2f7;
+            transform: none;
+        }
+
+        .terminal-wrapper {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 2px;
+            background-clip: padding-box;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 8px 15px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .traffic-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .red { background: #ff5f56; }
+        .yellow { background: #ffbd2e; }
+        .green { background: #27c93f; }
+
+        .terminal-title {
+            color: #999;
+            font-size: 12px;
+            font-family: monospace;
+            margin-left: 10px;
+        }
+
+        #logs { 
+            background-color: #1e1e1e; 
+            color: #a9dc76; 
+            padding: 15px; 
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            flex: 1; 
+            overflow-y: auto; 
+            white-space: pre-wrap; 
+            font-size: 13px; 
+            line-height: 1.5;
+            max-height: 200px;
+        }
+        
+        .log-entry { 
+            margin-bottom: 4px; 
+        }
+        
+        .log-info { color: #78dce8; }
+        .log-success { color: #a9dc76; }
+        .log-error { color: #ff6188; }
+        .log-warning { color: #ffd866; }
+
+        /* Custom Scrollbar for logs */
+        #logs::-webkit-scrollbar {
+            width: 8px;
+        }
+        #logs::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        #logs::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+        #logs::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="../../assets/RPH AI ASSIST BANNER.png" class="banner" alt="RPH AI Assist">
+        
+        <div class="grid-layout">
+            <div class="left-col">
+                <div class="card">
+                    <div class="control-group">
+                        <div class="step-row" style="margin-bottom: 0;">
+                            <div class="step-badge">1</div>
+                            <div class="step-content">
+                                <label>Jadual Waktu <span style="color: #ef4444;">*</span></label>
+                        <button id="extractScheduleBtn" class="save-btn" style="background: var(--theme-color); color: white; border: none; margin-bottom: 10px; font-weight: 600; padding: 12px; border-radius: 8px;">Muat Turun Jadual Waktu CIDS</button>
+                        <div id="scheduleTableContainer" style="display: none; margin-top: 15px; overflow-x: auto; background: white; border-radius: 8px; border: 1px solid #e1e1e1;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                                <thead>
+                                    <tr style="background: #f8f9fa; border-bottom: 1px solid #e1e1e1;">
+                                        <th style="padding: 8px;">Hari</th>
+                                        <th style="padding: 8px;">Kelas</th>
+                                        <th style="padding: 8px;">Subjek</th>
+                                        <th style="padding: 8px;">Masa</th>
+                                        <th style="padding: 8px; width: 60px;">Bil Murid</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scheduleTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid #e1e1e1; margin: 15px 0;">
+                        <label style="font-size: 11px;">Atau (Kaedah Lama: Muat Naik Gambar)</label>
+                        <div id="pasteArea" style="border: 2px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; color: var(--text-secondary); margin-bottom: 10px; transition: all 0.2s ease; font-size: 13px; background: #f8fafc;">
+                            Klik sini untuk memuat naik atau <br> Paste (Ctrl/Cmd+V) gambar jadual anda
+                        </div>
+                        <button id="clearScheduleBtn" class="save-btn" style="display: none; border-color: #ef4444; color: #ef4444; margin-top: 0; margin-bottom: 10px; border-radius: 8px; padding: 10px;">Buang Jadual Tersimpan</button>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <img id="imagePreview" style="display: none; width: 100%; border-radius: 10px; border: 1px solid #d1d1d6; cursor: pointer;" alt="Pratonton Jadual">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="card" style="margin-bottom: 16px;">
+                    <div class="control-group" style="margin-bottom: 20px;">
+                        <div class="step-row" style="margin-bottom: 0;">
+                            <div class="step-badge">2</div>
+                            <div class="step-content">
+                                <label for="datePicker">Pilih Tarikh Sasaran <span style="color: #ef4444;">*</span> <br><span class="label-desc">(Isnin - Jumaat)</span></label>
+                                <input type="date" id="datePicker">
+                                <div id="datePreview">Sila pilih tarikh...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group" style="margin-bottom: 0;">
+                        <div class="step-row" style="margin-bottom: 0;">
+                            <div class="step-badge">3</div>
+                            <div class="step-content">
+                                <label>Bahan Bantu Mengajar (BBM)</label>
+                        <div class="bbm-grid" id="bbmGroup">
+                            <label class="checkbox-label"><input type="checkbox" value="Buku Latihan"> Buku Latihan</label>
+                            <label class="checkbox-label"><input type="checkbox" value="Buku Teks"> Buku Teks</label>
+                            <label class="checkbox-label"><input type="checkbox" value="Kertas A4" checked> Kertas A4</label>
+                            <label class="checkbox-label"><input type="checkbox" value="Kertas Mahjong / Sebak"> Kertas Mahjong / Sebak</label>
+                            <label class="checkbox-label"><input type="checkbox" value="Komputer/Internet" checked> Komputer/Internet</label>
+                            <label class="checkbox-label"><input type="checkbox" value="Model/Alatan 3D"> Model/Alatan 3D</label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="Modul" id="bbmModulCb"> Modul
+                                <input type="text" id="bbmModulInput" class="input-field" style="margin-bottom: 0; padding: 4px 8px; font-size: 13px; width: 120px; margin-left: 5px; display: none;" placeholder="Nama modul...">
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="Nota" id="bbmNotaCb"> Nota
+                                <input type="text" id="bbmNotaInput" class="input-field" style="margin-bottom: 0; padding: 4px 8px; font-size: 13px; width: 120px; margin-left: 5px; display: none;" placeholder="Nama nota...">
+                            </label>
+                            <label class="checkbox-label"><input type="checkbox" value="Papan Putih Mini"> Papan Putih Mini</label>
+                            <label class="checkbox-label"><input type="checkbox" value="Projektor LCD"> Projektor LCD</label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="Lain-lain" id="bbmOtherCb" checked> Lain-lain
+                                <input type="text" id="bbmOtherInput" class="input-field" style="margin-bottom: 0; padding: 4px 8px; font-size: 13px; width: 120px; margin-left: 5px; display: none;" placeholder="Nyatakan...">
+                            </label>
+                        </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="background: #fefce8; border: 1px solid #fef08a; padding: 16px; margin-bottom: 24px;">
+                    <div style="font-size: 12px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        💡 MAKLUMAT PENTING
+                    </div>
+                    <div style="font-size: 11px; color: #475569; line-height: 1.6;">
+                        • Pastikan maklumat jadual yang diberi adalah tepat dan lengkap.<br>
+                        • AI akan hasilkan RPH menggunakan format 5E.<br>
+                        • Semua fasa akan merangkumi aktiviti Pembezaan.<br>
+                        • Bahasa janaan RPH ialah mengikut bahasa dalam RPT/ MIW.
+                    </div>
+                </div>
+
+                <button id="startBtn">✨ Jana RPH Automatik</button>
+            </div>
+        </div>
+        
+        <div class="terminal-wrapper">
+            <div class="terminal-header">
+                <div class="traffic-light red"></div>
+                <div class="traffic-light yellow"></div>
+                <div class="traffic-light green"></div>
+                <span class="terminal-title">Terminal</span>
+            </div>
+            <div id="logs"><span class="log-info">> Sistem sedia untuk bermula...</span><br></div>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const logsDiv = document.getElementById('logs');
+        const datePicker = document.getElementById('datePicker');
+        const datePreview = document.getElementById('datePreview');
+        const pasteArea = document.getElementById('pasteArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const clearScheduleBtn = document.getElementById('clearScheduleBtn');
+        const extractScheduleBtn = document.getElementById('extractScheduleBtn');
+        const scheduleTableContainer = document.getElementById('scheduleTableContainer');
+        const scheduleTableBody = document.getElementById('scheduleTableBody');
+        const bbmOtherCb = document.getElementById('bbmOtherCb');
+        const bbmOtherInput = document.getElementById('bbmOtherInput');
+        const bbmModulCb = document.getElementById('bbmModulCb');
+        const bbmModulInput = document.getElementById('bbmModulInput');
+        const bbmNotaCb = document.getElementById('bbmNotaCb');
+        const bbmNotaInput = document.getElementById('bbmNotaInput');
+
+        // Toggle Lain-lain, Modul, Nota input
+        bbmOtherCb.addEventListener('change', (e) => {
+            bbmOtherInput.style.display = e.target.checked ? 'inline-block' : 'none';
+        });
+        bbmModulCb.addEventListener('change', (e) => {
+            bbmModulInput.style.display = e.target.checked ? 'inline-block' : 'none';
+        });
+        bbmNotaCb.addEventListener('change', (e) => {
+            bbmNotaInput.style.display = e.target.checked ? 'inline-block' : 'none';
+        });
+
+        let formattedMiwDate = '';
+        let scheduleImageBase64 = null;
+        let savedLessons = null;
+
+        // Helper function to format date to DD-MM-YYYY
+        function formatDate(date) {
+            const d = String(date.getDate()).padStart(2, '0');
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = date.getFullYear();
+            return `${d}-${m}-${y}`;
+        }
+
+        datePicker.addEventListener('change', (e) => {
+            if (!e.target.value) return;
+            
+            const selectedDate = new Date(e.target.value);
+            const day = selectedDate.getDay();
+            
+            // Dapatkan tarikh Isnin dan Jumaat untuk minggu tersebut
+            const diffToMonday = selectedDate.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(selectedDate.setDate(diffToMonday));
+            
+            const friday = new Date(monday);
+            friday.setDate(monday.getDate() + 4);
+            
+            formattedMiwDate = `${formatDate(monday)} — ${formatDate(friday)}`;
+            datePreview.innerText = `Jadual MIW: ${formattedMiwDate}`;
+        });
+        
+        // Tetapkan tarikh lalai (hari ini) mengikut waktu tempatan semasa aplikasi dibuka
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        datePicker.value = `${yyyy}-${mm}-${dd}`;
+        // Pencetus (trigger) event 'change' untuk kemaskini teks MIW secara automatik
+        datePicker.dispatchEvent(new Event('change'));
+
+        window.electronAPI = window.electronAPI || window.parent.electronAPI;
+        
+        let globalSettings = {};
+        
+        // Muatkan maklumat log masuk dan API dari tetapan pusat
+        async function loadCentralSettings() {
+            try {
+                const settings = await window.electronAPI.getSettings();
+                if (settings) {
+                    globalSettings.username = settings.username || '';
+                    if (settings.password) {
+                        globalSettings.password = await window.electronAPI.decryptData(settings.password);
+                    }
+                    if (settings.apiKey) {
+                        globalSettings.apiKey = await window.electronAPI.decryptData(settings.apiKey);
+                    }
+                }
+            } catch (e) {
+                console.error("Gagal memuatkan tetapan:", e);
+            }
+        }
+        loadCentralSettings();
+
+        function renderExtractedSchedule(schedule) {
+            scheduleTableBody.innerHTML = '';
+            schedule.forEach((lesson, index) => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #f1f1f1';
+                tr.innerHTML = `
+                    <td style="padding: 8px;">${lesson.day}</td>
+                    <td style="padding: 8px;">${lesson.class}</td>
+                    <td style="padding: 8px;">${lesson.subject}</td>
+                    <td style="padding: 8px;">${lesson.time}</td>
+                    <td style="padding: 8px;">
+                        <input type="number" min="1" max="100" value="${lesson.student_count || 30}" 
+                            class="student-count-input" data-index="${index}"
+                            style="width: 50px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                    </td>
+                `;
+                scheduleTableBody.appendChild(tr);
+            });
+            
+            scheduleTableContainer.style.display = 'block';
+            clearScheduleBtn.style.display = 'block';
+            
+            document.querySelectorAll('.student-count-input').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const idx = e.target.getAttribute('data-index');
+                    savedLessons[idx].student_count = parseInt(e.target.value, 10);
+                    localStorage.setItem('rphSavedSchedule', JSON.stringify(savedLessons));
+                });
+            });
+            
+            scheduleImageBase64 = null;
+            imagePreview.style.display = 'none';
+            pasteArea.style.display = 'none';
+        }
+
+        // Semak jadual tersimpan
+        function checkSavedSchedule() {
+            const savedExtracted = localStorage.getItem('rphSavedSchedule');
+            const savedImage = localStorage.getItem('savedSchedule');
+
+            if (savedExtracted) {
+                try {
+                    savedLessons = JSON.parse(savedExtracted);
+                    renderExtractedSchedule(savedLessons);
+                } catch(e) {}
+            } else if (savedImage) {
+                try {
+                    savedLessons = JSON.parse(savedImage);
+                    pasteArea.innerHTML = '<span style="color: #27c93f; font-weight: bold;">✓ Jadual Tersimpan Ditemui</span><br>Anda tidak perlu memuat naik gambar baru melainkan ingin mengubahnya (Klik untuk tukar).';
+                    pasteArea.style.borderColor = '#27c93f';
+                    pasteArea.style.background = 'rgba(39, 201, 63, 0.05)';
+                    clearScheduleBtn.style.display = 'block';
+                } catch(e) {}
+            } else {
+                savedLessons = null;
+                pasteArea.innerHTML = 'Klik sini untuk memuat naik atau <br> Paste (Ctrl/Cmd+V) gambar jadual anda';
+                pasteArea.style.borderColor = '#d1d1d6';
+                pasteArea.style.background = 'transparent';
+                clearScheduleBtn.style.display = 'none';
+                scheduleTableContainer.style.display = 'none';
+            }
+        }
+        
+        checkSavedSchedule();
+
+        // Restore BBM from LocalStorage
+        function restoreSelections() {
+            const savedBBM = JSON.parse(localStorage.getItem('rphBBM') || '[]');
+            savedBBM.forEach(val => {
+                if (val !== 'Lain-lain') {
+                    const cb = document.querySelector(`#bbmGroup input[type="checkbox"][value="${val}"]`);
+                    if (cb) cb.checked = true;
+                }
+            });
+
+            const savedBbmOther = localStorage.getItem('rphBbmOtherChecked');
+            if (savedBbmOther === 'true') {
+                bbmOtherCb.checked = true;
+                bbmOtherInput.style.display = 'inline-block';
+                bbmOtherInput.value = localStorage.getItem('rphBbmOtherValue') || '';
+            }
+
+            const savedBbmModul = localStorage.getItem('rphBbmModulChecked');
+            if (savedBbmModul === 'true') {
+                bbmModulCb.checked = true;
+                bbmModulInput.style.display = 'inline-block';
+                bbmModulInput.value = localStorage.getItem('rphBbmModulValue') || '';
+            }
+
+            const savedBbmNota = localStorage.getItem('rphBbmNotaChecked');
+            if (savedBbmNota === 'true') {
+                bbmNotaCb.checked = true;
+                bbmNotaInput.style.display = 'inline-block';
+                bbmNotaInput.value = localStorage.getItem('rphBbmNotaValue') || '';
+            }
+        }
+        restoreSelections();
+
+        clearScheduleBtn.addEventListener('click', () => {
+            localStorage.removeItem('savedSchedule');
+            localStorage.removeItem('rphSavedSchedule');
+            scheduleTableBody.innerHTML = '';
+            scheduleTableContainer.style.display = 'none';
+            pasteArea.style.display = 'block';
+            checkSavedSchedule();
+        });
+
+        // Image upload/paste logic
+        pasteArea.addEventListener('click', () => fileInput.click());
+        imagePreview.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                processImage(e.target.files[0]);
+            }
+        });
+
+        document.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file') {
+                    const blob = item.getAsFile();
+                    processImage(blob);
+                }
+            }
+        });
+
+        function processImage(blob) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                scheduleImageBase64 = event.target.result.split(',')[1];
+                imagePreview.src = event.target.result;
+                imagePreview.style.display = 'block';
+                pasteArea.style.display = 'none';
+                clearScheduleBtn.style.display = 'block';
+                
+                // Clear the ASIE extracted table if image is uploaded
+                scheduleTableContainer.style.display = 'none';
+                scheduleTableBody.innerHTML = '';
+            };
+            reader.readAsDataURL(blob);
+        }
+
+        // Logic for Extracting Schedule from ASIE
+        extractScheduleBtn.addEventListener('click', async () => {
+            extractScheduleBtn.disabled = true;
+            extractScheduleBtn.innerText = 'Sedang Mengekstrak...';
+            appendLog('Memulakan pengekstrak jadual automatik dari ASIE Model...', 'info');
+            
+            try {
+                const credentials = {
+                    username: globalSettings.username,
+                    password: globalSettings.password
+                };
+                const response = await window.electronAPI.fetchScheduleFromAsie(credentials);
+                if (response.success && response.schedule && response.schedule.length > 0) {
+                    appendLog(`Berjaya mengekstrak ${response.schedule.length} kelas.`, 'success');
+                    savedLessons = response.schedule;
+                    
+                    localStorage.setItem('rphSavedSchedule', JSON.stringify(savedLessons));
+                    renderExtractedSchedule(savedLessons);
+                } else {
+                    if (response.error) {
+                        appendLog('Ralat: ' + response.error, 'error');
+                    } else {
+                        appendLog('Ralat: Tiada jadual dijumpai. Pastikan anda telah log masuk di ASIE atau tetapkan e-mel/kata laluan yang sah.', 'error');
+                    }
+                }
+            } catch (err) {
+                appendLog('Ralat semasa mengekstrak jadual: ' + err.message, 'error');
+            }
+            
+            extractScheduleBtn.disabled = false;
+            extractScheduleBtn.innerText = 'Muat Turun Jadual Waktu CIDS';
+        });
+
+        function appendLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            
+            // Add prefix depending on message type
+            let prefix = '> ';
+            if (message.includes('ERROR') || message.includes('Ralat')) {
+                entry.className = 'log-entry log-error';
+                prefix = '✖ ';
+            } else if (message.includes('Berjaya') || message.includes('successfully')) {
+                entry.className = 'log-entry log-success';
+                prefix = '✓ ';
+            }
+            
+            entry.innerText = prefix + message;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        let isSubmitting = false;
+
+        startBtn.addEventListener('click', () => {
+            if (isSubmitting) return;
+            isSubmitting = true;
+
+            // Lumpuhkan butang semasa proses berjalan
+            startBtn.disabled = true;
+            startBtn.innerText = 'Automasi Sedang Berjalan...';
+            
+            logsDiv.innerHTML = ''; // Clear previous logs
+            appendLog('Memulakan enjin AI Automator...', 'info');
+            appendLog(`Sasaran: ${formattedMiwDate}`, 'warning');
+            
+            window.electronAPI = window.electronAPI || window.parent.electronAPI;
+            const credentials = {
+                username: globalSettings.username,
+                password: globalSettings.password
+            };
+            
+            if (!credentials.username || !credentials.password) {
+                alert('Sila isikan maklumat log masuk dalam ruangan SETTING utama terlebih dahulu.');
+                return;
+            }
+            
+            if (!globalSettings.apiKey || globalSettings.apiKey.trim() === '') {
+                appendLog('AMARAN: Gemini API Key tidak dijumpai di tetapan pusat. Sistem akan cuba menggunakan Master API Key sebagai sandaran.', 'warning');
+            }
+            if (!scheduleImageBase64 && (!savedLessons || savedLessons.length === 0)) {
+                appendLog('RALAT: Sila ekstrak jadual dari ASIE atau muat naik gambar jadual waktu.', 'error');
+                startBtn.disabled = false;
+                startBtn.innerText = 'Mulakan Automasi RPH';
+                isSubmitting = false;
+                return;
+            }
+            
+
+            const bbmElements = document.querySelectorAll('#bbmGroup input[type="checkbox"]:checked');
+            let bbm = [];
+            let rawBbmValues = [];
+            
+            Array.from(bbmElements).forEach(cb => {
+                rawBbmValues.push(cb.value);
+                if (cb.value === 'Lain-lain') {
+                    if (bbmOtherInput.value.trim() !== '') {
+                        bbm.push(bbmOtherInput.value.trim());
+                    }
+                } else if (cb.value === 'Modul') {
+                    if (bbmModulInput.value.trim() !== '') {
+                        bbm.push(`Modul: ${bbmModulInput.value.trim()}`);
+                    } else {
+                        bbm.push('Modul');
+                    }
+                } else if (cb.value === 'Nota') {
+                    if (bbmNotaInput.value.trim() !== '') {
+                        bbm.push(`Nota: ${bbmNotaInput.value.trim()}`);
+                    } else {
+                        bbm.push('Nota');
+                    }
+                } else {
+                    bbm.push(cb.value);
+                }
+            });
+
+            // Save selections to LocalStorage
+            localStorage.setItem('rphBBM', JSON.stringify(rawBbmValues));
+            localStorage.setItem('rphBbmOtherChecked', bbmOtherCb.checked);
+            localStorage.setItem('rphBbmOtherValue', bbmOtherInput.value);
+            localStorage.setItem('rphBbmModulChecked', bbmModulCb.checked);
+            localStorage.setItem('rphBbmModulValue', bbmModulInput.value);
+            localStorage.setItem('rphBbmNotaChecked', bbmNotaCb.checked);
+            localStorage.setItem('rphBbmNotaValue', bbmNotaInput.value);
+
+            // Panggil fungsi IPC di main.js melalui preload
+            window.electronAPI.startAutomation({ 
+                miwDate: formattedMiwDate, 
+                credentials,
+                apiKey: globalSettings.apiKey,
+                imageBase64: scheduleImageBase64,
+                savedLessons: scheduleImageBase64 ? null : savedLessons, // Hantar jadual jika tiada imej baru
+                bbm: bbm
+            });
+        });
+
+        // Terima jadual yang diekstrak untuk disimpan
+        window.electronAPI.onScheduleExtracted((lessons) => {
+            localStorage.setItem('savedSchedule', JSON.stringify(lessons));
+            checkSavedSchedule(); // Update UI
+            appendLog('✓ Data jadual telah disimpan untuk kegunaan akan datang.', 'success');
+        });
+
+        // Terima log kemas kini daripada proses Node (main.js)
+        window.electronAPI.onAutomationLog((message) => {
+            appendLog(message);
+        });
+
+        // Apabila proses selesai atau ralat berlaku
+        window.electronAPI.onAutomationDone(() => {
+            startBtn.disabled = false;
+            startBtn.innerText = 'Mulakan Automasi RPH';
+            isSubmitting = false;
+            appendLog('Tugas selesai!', 'success');
+        });
+    </script>
+</body>
+</html>

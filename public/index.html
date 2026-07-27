@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIDS Suites Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ============================================
+           FULL-SCREEN TRIAL LOCK OVERLAY
+           Menghalang SEMUA interaksi apabila trial luput
+           ============================================ */
+        #trial-lock-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 999999;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #trial-lock-screen.active {
+            display: flex;
+        }
+        #trial-lock-screen .lock-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px 32px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+            animation: lockAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes lockAppear {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        #trial-lock-screen .lock-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: lockPulse 2s ease-in-out infinite;
+        }
+        @keyframes lockPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+        #trial-lock-screen h2 {
+            color: #fff;
+            font-size: 22px;
+            font-weight: 800;
+            margin: 0 0 8px;
+        }
+        #trial-lock-screen .lock-subtitle {
+            color: rgba(255,255,255,0.6);
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 28px;
+        }
+        #trial-lock-screen .lock-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-family: monospace;
+            letter-spacing: 2px;
+            text-align: center;
+            text-transform: uppercase;
+            box-sizing: border-box;
+            outline: none;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+        #trial-lock-screen .lock-input:focus {
+            border-color: #6366f1;
+            background: rgba(99,102,241,0.1);
+        }
+        #trial-lock-screen .lock-error {
+            color: #f87171;
+            font-size: 12px;
+            min-height: 18px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        #trial-lock-screen .lock-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        #trial-lock-screen .lock-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(99,102,241,0.5);
+        }
+        #trial-lock-screen .lock-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        #trial-lock-screen .lock-badge {
+            display: inline-block;
+            background: rgba(239,68,68,0.2);
+            border: 1px solid rgba(239,68,68,0.4);
+            color: #f87171;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        /* Trial Banner */
+        .trial-banner {
+            display: none; /* ditunjuk via JS */
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.1));
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 0 12px 8px;
+            font-size: 11px;
+            color: #fcd34d;
+            font-weight: 600;
+            animation: trialPulse 3s ease-in-out infinite;
+        }
+        .trial-banner.show { display: flex; }
+        .trial-banner .trial-icon { font-size: 14px; flex-shrink: 0; }
+        .trial-banner .trial-text { flex: 1; line-height: 1.3; }
+        .trial-banner .trial-days { font-size: 16px; font-weight: 800; color: #f59e0b; }
+        .trial-banner.danger { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.1)); border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+        .trial-banner.danger .trial-days { color: #ef4444; }
+        .active-badge {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background: rgba(34,197,94,0.08);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 8px;
+            padding: 6px 12px;
+            margin: 0 12px 8px;
+            font-size: 11px;
+            color: #86efac;
+            font-weight: 600;
+        }
+        .active-badge.show { display: flex; }
+        @keyframes trialPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.2); }
+            50% { box-shadow: 0 0 0 4px rgba(245,158,11,0); }
+        }
+
+        /* Custom Password Modal */
+        .password-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .password-modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+        .password-modal {
+            background: #1e1e2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 24px;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: #fff;
+        }
+        .password-modal-overlay.show .password-modal {
+            transform: scale(1);
+        }
+        .password-modal .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            color: #ff3b30;
+        }
+        .password-modal h3 {
+            margin: 0 0 12px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .password-modal p {
+            margin: 0 0 20px;
+            font-size: 13px;
+            color: #9ca3af;
+            line-height: 1.5;
+        }
+        .password-modal input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+            outline: none;
+            font-size: 14px;
+        }
+        .password-modal input:focus {
+            border-color: #ff3b30;
+            box-shadow: 0 0 0 3px rgba(255,59,48,0.2);
+        }
+        .password-modal .actions {
+            display: flex;
+            gap: 12px;
+        }
+        .password-modal .btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .password-modal .btn-cancel {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .password-modal .btn-cancel:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .password-modal .btn-submit {
+            background: #ff3b30;
+            color: #fff;
+        }
+        .password-modal .btn-submit:hover {
+            background: #ff453a;
+        }
+        .password-modal .error-msg {
+            color: #ff453a;
+            font-size: 12px;
+            margin-top: -8px;
+            margin-bottom: 12px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="assets/CIDS-NEW-GEN ICON.png" alt="Logo" class="logo">
+                <div class="brand">
+                    <img src="assets/BRANDING.png" alt="CIDS SUITES PRO" class="sidebar-branding-img">
+                    <p>AI Assists. Less Admin. More Teaching.</p>
+                </div>
+            </div>
+
+            <!-- Trial / License Status Banner -->
+            <div class="trial-banner" id="trial-banner">
+                <span class="trial-icon">⏳</span>
+                <div class="trial-text">
+                    <div>TRIAL MODE</div>
+                    <div><span class="trial-days" id="trial-days-count">30</span> hari lagi</div>
+                </div>
+            </div>
+            <div class="active-badge" id="active-badge">
+                <span>✅</span>
+                <span>Lesen Aktif</span>
+            </div>
+
+            <nav class="sidebar-menu">
+                <button class="menu-item" data-target="modules/rpt-assist/index.html" data-id="rpt">
+                    <img src="assets/RPT AI ASSIST ICON.png" alt="RPT" class="menu-icon">
+                    <span>RPT ASSIST</span>
+                </button>
+                <button class="menu-item" data-target="modules/schedule-assist/index.html" data-id="schedule">
+                    <img src="assets/SCHEDULE AI ASSIST ICON.png" alt="Schedule" class="menu-icon">
+                    <span>SCHEDULE ASSIST</span>
+                </button>
+                <button class="menu-item" data-target="modules/rph-assist/index.html" data-id="rph">
+                    <img src="assets/RPH AI ASSIST ICON.png" alt="RPH" class="menu-icon">
+                    <span>RPH ASSIST</span>
+                </button>
+                <button class="menu-item" data-target="modules/rph-deleter/index.html" data-id="deleter">
+                    <img src="assets/RPH DELETER ICON.png" alt="Deleter" class="menu-icon">
+                    <span>RPH DELETER</span>
+                </button>
+                <button class="menu-item setting-btn" data-target="modules/settings/index.html" data-id="setting">
+                    <img src="assets/SETTING ICON.png" alt="Setting" class="menu-icon">
+                    <span>SETTING</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="footer-card">
+                    <div class="shield-icon">⚡</div>
+                    <div class="footer-features">
+                        <h4>SYSTEM STATUS</h4>
+                        <ul class="status-list">
+                            <li>
+                                <div class="led led-red" id="status-asie"></div>
+                                <div style="display:flex; flex-direction:column;">
+                                    <span>asiemodel.net</span>
+                                    <span id="asie-login-status" style="font-size: 9px; color: #ff3b30; margin-top: 2px; font-weight: 500;">Belum Log Masuk</span>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="led led-red" id="status-api"></div>
+                                <div style="display:flex; flex-direction:column;">
+                                    <span>API Key (AI)</span>
+                                    <span id="api-reason" style="font-size: 9px; color: #ff3b30; margin-top: 2px; font-weight: 500; display: none;"></span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="content-area">
+            <!-- Iframe to load modules -->
+            <iframe id="module-frame" src="modules/dashboard/index.html" frameborder="0"></iframe>
+        </main>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="password-modal-overlay" id="passwordModal">
+        <div class="password-modal">
+            <div class="icon" style="margin-bottom: 15px;">
+                <svg viewBox="0 0 24 24" width="56" height="56" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #ff4757; drop-shadow: 0 4px 6px rgba(255, 71, 87, 0.2);">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <h3>Adakah anda benar ingin "delete" RPH?</h3>
+            <p>Sila taipkan "<strong>saya ingin delete RPH</strong>" untuk meneruskan operasi.</p>
+            <input type="text" id="modalPasswordInput" placeholder="saya ingin delete RPH" autocomplete="off">
+            <div class="error-msg" id="modalErrorMsg">Teks yang dimasukkan tidak tepat!</div>
+            <div class="actions">
+                <button class="btn btn-cancel" id="modalCancelBtn">Batal</button>
+                <button class="btn btn-submit" id="modalSubmitBtn" style="background: #ff4757; color: white;">Padam RPH</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- License Key Activation Modal (untuk klik banner biasa) -->
+    <div class="password-modal-overlay" id="licenseKeyModal">
+        <div class="password-modal" style="text-align: center; max-width: 380px;">
+            <div class="icon" style="margin-bottom: 12px; font-size: 32px;">🔑</div>
+            <h3 id="modalTitle" style="margin-bottom: 8px; color: #1e293b;">Aktifkan Lesen CIDS Suites Pro</h3>
+            <p id="modalDesc" style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Sila masukkan Kunci Lesen anda (2 Peranti). Format: <code>CIDS-XXXX-XXXX-XXXX</code></p>
+            <input type="text" id="licenseKeyInput" placeholder="CIDS-ABCD-1234-EFGH" autocomplete="off" style="text-transform: uppercase; font-family: monospace; letter-spacing: 1px; text-align: center; padding: 12px; font-size: 15px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; margin-bottom: 12px;">
+            <div class="error-msg" id="licenseKeyErrorMsg" style="display: none; color: #ef4444; font-size: 12px; margin-bottom: 12px;"></div>
+            <div class="actions" style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn btn-cancel" id="licenseCancelBtn" style="padding: 10px 18px; border-radius: 8px; background: #f1f5f9; border: none; color: #64748b; font-weight: 600; cursor: pointer;">Batal</button>
+                <button class="btn btn-submit" id="licenseSubmitBtn" style="padding: 10px 18px; border-radius: 8px; background: #2563eb; border: none; color: white; font-weight: 600; cursor: pointer;">Aktifkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRUE FULL-SCREEN LOCK (apabila trial luput - menghalang SEMUA interaksi) -->
+    <div id="trial-lock-screen">
+        <div class="lock-card">
+            <div class="lock-icon">🔒</div>
+            <div class="lock-badge">TRIAL TAMAT</div>
+            <h2>Percubaan 14 Hari Tamat</h2>
+            <p class="lock-subtitle">Tempoh percubaan anda telah berakhir.<br>Sila aktifkan lesen untuk teruskan menggunakan CIDS Suites Pro.</p>
+            <input type="text" id="lockKeyInput" class="lock-input" placeholder="CIDS-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters">
+            <div class="lock-error" id="lockErrorMsg"></div>
+            <button class="lock-btn" id="lockActivateBtn">🔓 Aktifkan Lesen</button>
+        </div>
+    </div>
+    <script src="device-fingerprint.js"></script>
+    <script src="electron-mock.js"></script>
+    <script src="renderer.js">setTimeout(() => document.querySelector(`[data-id="rpt"]`).click(), 1000);</script>
+    <script>
+        (async function initLicense() {
+            try {
+                const status = await window.electronAPI.checkLicense();
+                if (!status) return;
+
+                const trialBanner    = document.getElementById('trial-banner');
+                const activeBadge    = document.getElementById('active-badge');
+                const trialDaysEl    = document.getElementById('trial-days-count');
+                const licenseKeyModal  = document.getElementById('licenseKeyModal');
+                const licenseKeyInput  = document.getElementById('licenseKeyInput');
+                const licenseKeyErrorMsg = document.getElementById('licenseKeyErrorMsg');
+                const licenseSubmitBtn = document.getElementById('licenseSubmitBtn');
+                const licenseCancelBtn = document.getElementById('licenseCancelBtn');
+
+                // ---- Fungsi kunci skrin penuh (trial luput) ----
+                const lockScreen = document.getElementById('trial-lock-screen');
+                const lockInput  = document.getElementById('lockKeyInput');
+                const lockError  = document.getElementById('lockErrorMsg');
+                const lockBtn    = document.getElementById('lockActivateBtn');
+
+                function showLockScreen() {
+                    if (!lockScreen) return;
+                    lockScreen.classList.add('active');
+                    // Cegah scroll dan interaksi di belakang
+                    document.body.style.overflow = 'hidden';
+                    document.body.style.pointerEvents = 'none';
+                    lockScreen.style.pointerEvents = 'all';
+                    if (lockInput) setTimeout(() => lockInput.focus(), 300);
+                }
+
+                if (lockBtn) {
+                    lockBtn.addEventListener('click', async () => {
+                        const key = (lockInput ? lockInput.value : '').trim();
+                        if (!key) {
+                            if (lockError) { lockError.textContent = 'Sila masukkan kunci lesen.'; lockError.style.display = 'block'; }
+                            return;
+                        }
+                        lockBtn.disabled = true;
+                        lockBtn.textContent = '⏳ Mengesahkan...';
+                        if (lockError) lockError.style.display = 'none';
+                        try {
+                            const res = await window.electronAPI.activateLicense(key);
+                            if (res && (res.success || res.valid)) {
+                                lockBtn.textContent = '✅ Berjaya!';
+                                setTimeout(() => location.reload(), 800);
+                            } else {
+                                lockBtn.disabled = false;
+                                lockBtn.textContent = '🔓 Aktifkan Lesen';
+                                if (lockError) { lockError.textContent = res.message || 'Kunci lesen tidak sah. Cuba semula.'; lockError.style.display = 'block'; }
+                            }
+                        } catch(e) {
+                            lockBtn.disabled = false;
+                            lockBtn.textContent = '🔓 Aktifkan Lesen';
+                            if (lockError) { lockError.textContent = 'Ralat sambungan. Cuba semula.'; lockError.style.display = 'block'; }
+                        }
+                    });
+                    if (lockInput) {
+                        lockInput.addEventListener('keydown', e => { if (e.key === 'Enter') lockBtn.click(); });
+                    }
+                }
+
+                // ---- Modal ringkas (klik banner semasa trial masih aktif) ----
+                const openModal = () => {
+                    if (!licenseKeyModal) return;
+                    if (licenseKeyInput) licenseKeyInput.value = '';
+                    if (licenseKeyErrorMsg) licenseKeyErrorMsg.style.display = 'none';
+                    licenseKeyModal.classList.add('show');
+                };
+
+                if (trialBanner) trialBanner.addEventListener('click', openModal);
+                if (activeBadge) activeBadge.addEventListener('click', openModal);
+                if (licenseCancelBtn) licenseCancelBtn.addEventListener('click', () => licenseKeyModal.classList.remove('show'));
+
+                if (licenseSubmitBtn) {
+                    licenseSubmitBtn.addEventListener('click', async () => {
+                        const key = licenseKeyInput ? licenseKeyInput.value.trim() : '';
+                        if (!key) {
+                            if (licenseKeyErrorMsg) { licenseKeyErrorMsg.textContent = 'Sila masukkan kunci lesen.'; licenseKeyErrorMsg.style.display = 'block'; }
+                            return;
+                        }
+                        licenseSubmitBtn.disabled = true;
+                        licenseSubmitBtn.textContent = 'Mengesahkan...';
+                        const res = await window.electronAPI.activateLicense(key);
+                        licenseSubmitBtn.disabled = false;
+                        licenseSubmitBtn.textContent = 'Aktifkan';
+                        if (res && (res.success || res.valid)) {
+                            alert(res.message || 'Lesen berjaya diaktifkan!');
+                            licenseKeyModal.classList.remove('show');
+                            location.reload();
+                        } else {
+                            if (licenseKeyErrorMsg) { licenseKeyErrorMsg.textContent = res.message || 'Kunci lesen tidak sah.'; licenseKeyErrorMsg.style.display = 'block'; }
+                        }
+                    });
+                }
+
+                // ---- Tindak balas mengikut status ----
+                if (status.mode === 'trial') {
+                    if (trialDaysEl) trialDaysEl.textContent = status.daysLeft != null ? status.daysLeft : 14;
+                    if (trialBanner) {
+                        trialBanner.classList.add('show');
+                        trialBanner.classList.remove('danger');
+                        const icon = trialBanner.querySelector('.trial-icon');
+                        if (status.daysLeft <= 7) {
+                            trialBanner.classList.add('danger');
+                            if (icon) icon.textContent = '🔴';
+                        } else {
+                            if (icon) icon.textContent = '⏳';
+                        }
+                    }
+                } else if (status.mode === 'active') {
+                    if (activeBadge) activeBadge.classList.add('show');
+                } else if (status.mode === 'trial_expired' || status.mode === 'key_invalid') {
+                    // KUNCI SISTEM SEPENUHNYA - tiada cara untuk bypass!
+                    showLockScreen();
+                }
+            } catch(e) {
+                console.log('License init failed:', e.message);
+            }
+        })();
+    </script>
+</body>
+</html>
