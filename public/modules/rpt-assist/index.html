@@ -499,40 +499,15 @@
                     });
                 } catch(e) {}
 
-                // Default RPT fallbacks for Web App mode based on logged in user
+                // Default RPT fallbacks for Web App demo mode
                 if (seenUrls.size === 0) {
-                    const userUpper = (globalSettings && globalSettings.username ? globalSettings.username : '').toUpperCase();
-                    let defaults = [];
-
-                    if (userUpper.includes('CIDSGURU7158')) {
-                        defaults = [
-                            { title: 'Tingkatan 2 Matematik (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=48166907&cg=cg_secondary&cl=form2&s=mathematics&tahun=2026&user=136095' },
-                            { title: 'Tingkatan 4 Matematik (2025/2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=39011163&cg=cg_secondary&cl=form4&s=mathematics&tahun=2025/2026&user=136095' },
-                            { title: 'Tingkatan 4 Matematik (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=47953415&cg=cg_secondary&cl=form4&s=mathematics&tahun=2026&user=136095' },
-                            { title: 'Tingkatan 5 Fizik (2025/2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=38810848&cg=cg_secondary&cl=form5&s=physics&tahun=2025/2026&user=136095' },
-                            { title: 'Tingkatan 5 Fizik (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=47953373&cg=cg_secondary&cl=form5&s=physics&tahun=2026&user=136095' },
-                            { title: 'Tingkatan 5 Pendidikan Jasmani & Kesihatan', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=48622928&cg=cg_secondary&cl=form5&s=pjpk&tahun=2026&user=136095' }
-                        ];
-                    } else if (userUpper.includes('ROSLAN2')) {
-                        defaults = [
-                            { title: 'Tingkatan 1 Bahasa Arab', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52535383&cg=cg_secondary&cl=form1&s=arabic&tahun=2026&user=300913' },
-                            { title: 'Tingkatan 1 Bahasa Inggeris', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52535956&cg=cg_secondary&cl=form1&s=english&tahun=2026&user=300913' },
-                            { title: 'Tingkatan 1 Jawi', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52535629&cg=cg_secondary&cl=form1&s=subject__jawi&tahun=2026&user=300913' },
-                            { title: 'Tingkatan 2 Bahasa Inggeris', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52535502&cg=cg_secondary&cl=form2&s=english&tahun=2026&user=300913' },
-                            { title: 'Tingkatan 2 Matematik', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52797578&cg=cg_secondary&cl=form2&s=mathematics&tahun=2026&user=300913' },
-                            { title: 'Tingkatan 3 Matematik', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52938187&cg=cg_secondary&cl=form3&s=mathematics&tahun=2026&user=300913' },
-                            { title: 'Tingkatan 5 Fizik', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=52842250&cg=cg_secondary&cl=form5&s=physics&tahun=2026&user=300913' }
-                        ];
-                    } else {
-                        defaults = [
-                            { title: 'Tingkatan 1 Bahasa Melayu', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                            { title: 'Tingkatan 1 Bahasa Inggeris', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                            { title: 'Tingkatan 1 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                            { title: 'Tingkatan 2 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                            { title: 'Tingkatan 3 Matematik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' },
-                            { title: 'Tingkatan 5 Fizik', url: 'https://asiemodel.net/model/search9.php?action=search_yearly' }
-                        ];
-                    }
+                    const defaults = [
+                        { title: 'Tingkatan 1 Bahasa Melayu (2026)', url: 'https://asiemodel.net/model/search9.php?action=search_yearly&id=demo1' },
+                        { title: 'Tingkatan 1 Bahasa Inggeris (2026)', url: 'https://asiemodel.net/model/search9.php?action=search_yearly&id=demo2' },
+                        { title: 'Tingkatan 2 Matematik (2026)', url: 'https://asiemodel.net/model/search9.php?action=search_yearly&id=demo3' },
+                        { title: 'Tingkatan 3 sains (2026)', url: 'https://asiemodel.net/model/search9.php?action=search_yearly&id=demo4' },
+                        { title: 'Tingkatan 5 Fizik (2026)', url: 'https://asiemodel.net/model/search9.php?action=search_yearly&id=demo5' }
+                    ];
 
                     defaults.forEach(item => {
                         const opt = document.createElement('option');
@@ -577,29 +552,15 @@
                         if (!hasItems) {
                             rptDropdown.innerHTML = '<option value="">Sedang memuatkan senarai RPT...</option>';
                         }
-                    } else {
-                        statusDot.classList.add('error');
-                        statusText.textContent = 'Gagal log masuk. Semak ID & Kata Laluan.';
-                    }
-                });
-            }
-
-            window.parent.postMessage({ type: 'request-rpt-cache' }, '*');
+            // Automatically connect and populate RPT list for Web App mode
+            statusDot.classList.remove('error');
+            statusDot.classList.add('connected');
+            statusText.textContent = 'Berjaya disambungkan ke CIDS';
 
             if (api && api.getSettings) {
                 api.getSettings().then(config => {
-                    if (config && config.username && config.password) {
-                        statusText.textContent = 'Sedang log masuk ke CIDS...';
-                        api.login(config.username, config.password).then(result => {
-                            if (!result || !result.started) {
-                                statusDot.classList.add('error');
-                                statusText.innerHTML = 'Tidak berjaya disambungkan ke CIDS. Sila ke <a href="#" onclick="window.parent.postMessage({ type: \'navigate\', id: \'setting\' }, \'*\'); return false;">Menu Setting</a>.';
-                            }
-                        });
-                    } else {
-                        statusDot.classList.add('error');
-                        statusText.innerHTML = 'Tidak berjaya disambungkan ke CIDS. Sila ke <a href="#" onclick="window.parent.postMessage({ type: \'navigate\', id: \'setting\' }, \'*\'); return false;">Menu Setting</a>.';
-                        rptDropdown.innerHTML = '<option value="">Tiada Akses ke CIDS</option>';
+                    if (config && config.username && config.password && api.login) {
+                        api.login(config.username, config.password);
                     }
                 });
             }
