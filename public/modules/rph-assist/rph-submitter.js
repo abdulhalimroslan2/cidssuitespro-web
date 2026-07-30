@@ -382,7 +382,31 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
             
             // --- LOGIK PENGAGIHAN TICK STANDARD PEMBELAJARAN (DI DALAM MODAL MIW) ---
             console.log(`Menyemak kotak pilihan (checkbox) Standard Kandungan & Pembelajaran di modal MIW untuk agihan Sesi ${successfulSessions + 1}...`);
-            await page.evaluate(({ sessionIndex, targetSessions }) => {
+             await page.evaluate(({ sessionIndex, targetSessions }) => {
+                const getItemText = (cb) => {
+                    let text = '';
+                    if (cb.nextElementSibling && cb.nextElementSibling.textContent) {
+                        text = cb.nextElementSibling.textContent.trim();
+                    }
+                    if (!text && cb.nextSibling && cb.nextSibling.textContent) {
+                        text = cb.nextSibling.textContent.trim();
+                    }
+                    if (!text && cb.parentElement && ['LI', 'LABEL', 'SPAN', 'DIV'].includes(cb.parentElement.tagName) && !['UL', 'OL', 'FORM', 'BODY'].includes(cb.parentElement.tagName)) {
+                        text = cb.parentElement.textContent.trim();
+                    }
+                    if (!text) {
+                        text = (cb.getAttribute('name') || cb.value || '').trim();
+                    }
+                    return text;
+                };
+
+                const getPrefixFromText = (str) => {
+                    if (!str) return null;
+                    const match = str.match(/([\d\u0660-\u0669]+(\.[\d\u0660-\u0669]+)+)/);
+                    if (!match) return null;
+                    return match[1];
+                };
+
                 const chunkCheckboxes = (checkboxes, S, sIndex) => {
                     if (!checkboxes || checkboxes.length <= 1) return;
                     const N = checkboxes.length;
@@ -399,6 +423,9 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                     }
                     
                     const myChunk = chunks[sIndex] || [];
+                    if (myChunk.length === 0) {
+                        myChunk.push(N - 1);
+                    }
                     
                     for (let j = 0; j < N; j++) {
                         const cb = checkboxes[j];
@@ -413,10 +440,25 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                     }
                 };
 
-                let skUl = document.querySelector('ul.standard_kandungan');
-                let spUl = document.querySelector('ul.standard_pembelajaran');
+                let findUlByTitle = (titleText) => {
+                    let uls = document.querySelectorAll('li.ititle');
+                    for (let li of uls) {
+                        if (li.textContent.toLowerCase().includes(titleText.toLowerCase())) {
+                            return li.querySelector('ul');
+                        }
+                    }
+                    return null;
+                };
+
+                let skUl = findUlByTitle('standard kandungan') || document.querySelector('ul.standard_kandungan');
+                let spUl = findUlByTitle('standard pembelajaran') || document.querySelector('ul.standard_pembelajaran');
+                let temaUl = findUlByTitle('tema') || document.querySelector('ul.tema') || findUlByTitle('bidang pembelajaran') || document.querySelector('ul.bidang_pembelajaran');
+                let fokusUl = findUlByTitle('fokus') || document.querySelector('ul.fokus');
+                
                 let skCheckboxes = [];
                 let spCheckboxes = [];
+                let temaCheckboxes = [];
+                let fokusCheckboxes = [];
                 
                 if (skUl) {
                     skCheckboxes = Array.from(skUl.querySelectorAll('input[type="checkbox"]'));
@@ -424,15 +466,18 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                 if (spUl) {
                     spCheckboxes = Array.from(spUl.querySelectorAll('input[type="checkbox"]'));
                 }
+                if (temaUl) {
+                    temaCheckboxes = Array.from(temaUl.querySelectorAll('input[type="checkbox"]'));
+                }
+                if (fokusUl) {
+                    fokusCheckboxes = Array.from(fokusUl.querySelectorAll('input[type="checkbox"]'));
+                }
                 
                 if (spCheckboxes.length === 0) {
                     const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
                     spCheckboxes = allCbs.filter(cb => {
-                        const parentText = cb.parentElement?.textContent || '';
-                        const nextText = cb.nextSibling?.textContent || '';
-                        const hasNumber = /\d+\.\d+\.\d+/.test(parentText) || /\d+\.\d+\.\d+/.test(nextText);
-                        const hasArabicNumber = /[\u0660-\u0669]+\.[\u0660-\u0669]+\.[\u0660-\u0669]+/.test(parentText) || /[\u0660-\u0669]+\.[\u0660-\u0669]+\.[\u0660-\u0669]+/.test(nextText);
-                        return hasNumber || hasArabicNumber;
+                        const text = getItemText(cb);
+                        return /[\d\u0660-\u0669]+\.[\d\u0660-\u0669]+\.[\d\u0660-\u0669]+/.test(text);
                     });
                 }
                 
@@ -440,10 +485,8 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                     const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
                     skCheckboxes = allCbs.filter(cb => {
                         if (spCheckboxes.includes(cb)) return false;
-                        const parentText = cb.parentElement?.textContent || '';
-                        const nextText = cb.nextSibling?.textContent || '';
-                        const hasNumber = /^\s*\d+\.\d+(\s|$)/.test(parentText) || /^\s*\d+\.\d+(\s|$)/.test(nextText);
-                        return hasNumber;
+                        const text = getItemText(cb);
+                        return /^\s*[\d\u0660-\u0669]+\.[\d\u0660-\u0669]+(\s|$)/.test(text);
                     });
                 }
                 
@@ -454,18 +497,91 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                     }
                 }
                 
-                let targetCheckboxes = [...skCheckboxes, ...spCheckboxes];
+                let targetCheckboxes = [...skCheckboxes, ...spCheckboxes, ...temaCheckboxes, ...fokusCheckboxes];
                 
                 if (targetCheckboxes.length === 0) {
                     console.log("Amaran: Tiada kotak Standard Pembelajaran dijumpai untuk ditanda.");
                 }
                 
                 if (targetSessions > 1) {
-                    if (skCheckboxes.length > 1) {
-                        chunkCheckboxes(skCheckboxes, targetSessions, sessionIndex);
-                    }
+                    // 1. Bahagikan Standard Pembelajaran secara rata
                     if (spCheckboxes.length > 1) {
                         chunkCheckboxes(spCheckboxes, targetSessions, sessionIndex);
+                    }
+                    
+                    // 2. Ekstrak awalan nombor SK dan BP (Bidang Pembelajaran) daripada SP yang aktif dalam sesi ini
+                    const activeSPs = spCheckboxes.filter(cb => cb.checked);
+                    let skPrefixesNeeded = new Set();
+                    let temaPrefixesNeeded = new Set();
+                    
+                    activeSPs.forEach(cb => {
+                        const txt = getItemText(cb);
+                        const fullNum = getPrefixFromText(txt);
+                        if (fullNum) {
+                            const parts = fullNum.split('.');
+                            const skPrefix = parts.length >= 2 ? parts.slice(0, parts.length - 1).join('.') : fullNum;
+                            skPrefixesNeeded.add(skPrefix);
+                            
+                            const majorNum = parts[0];
+                            temaPrefixesNeeded.add(majorNum);
+                            temaPrefixesNeeded.add(majorNum + '.0');
+                        }
+                    });
+                    
+                    // 3. Selaraskan Standard Kandungan (SK): hanya tandakan SK yang padan dengan active SPs
+                    if (skCheckboxes.length > 0 && skPrefixesNeeded.size > 0) {
+                        const targetPrefixes = Array.from(skPrefixesNeeded);
+                        skCheckboxes.forEach(cb => {
+                            if (!cb.disabled) {
+                                const txt = getItemText(cb);
+                                const fullNum = getPrefixFromText(txt) || txt.match(/^([\d\u0660-\u0669]+(\.[\d\u0660-\u0669]+)*)/)?.[1];
+                                let shouldBeChecked = false;
+                                if (fullNum) {
+                                    shouldBeChecked = targetPrefixes.some(p => fullNum === p || fullNum.startsWith(p + '.') || p.startsWith(fullNum + '.'));
+                                } else {
+                                    shouldBeChecked = true;
+                                }
+                                
+                                if (shouldBeChecked && !cb.checked) {
+                                    cb.click();
+                                } else if (!shouldBeChecked && cb.checked) {
+                                    cb.click();
+                                }
+                            }
+                        });
+                    }
+                    
+                    // 4. Selaraskan Bidang Pembelajaran / Tema (BP): hanya tandakan BP yang padan dengan active SPs
+                    if (temaCheckboxes.length > 0 && temaPrefixesNeeded.size > 0) {
+                        const targetTemaPrefixes = Array.from(temaPrefixesNeeded);
+                        temaCheckboxes.forEach(cb => {
+                            if (!cb.disabled) {
+                                const txt = getItemText(cb);
+                                const fullNum = getPrefixFromText(txt) || txt.match(/^([\d\u0660-\u0669]+(\.[\d\u0660-\u0669]+)*)/)?.[1];
+                                let shouldBeChecked = false;
+                                if (fullNum) {
+                                    const parts = fullNum.split('.');
+                                    const majorNum = parts[0];
+                                    const majorNumZero = parts.length >= 2 ? parts.slice(0, 2).join('.') : parts[0] + '.0';
+                                    shouldBeChecked = targetTemaPrefixes.some(p => 
+                                        fullNum === p || fullNum.startsWith(p + '.') || p.startsWith(fullNum + '.') ||
+                                        majorNum === p || majorNumZero === p
+                                    );
+                                } else {
+                                    shouldBeChecked = true;
+                                }
+                                
+                                if (shouldBeChecked && !cb.checked) {
+                                    cb.click();
+                                } else if (!shouldBeChecked && cb.checked) {
+                                    cb.click();
+                                }
+                            }
+                        });
+                    }
+                    
+                    if (fokusCheckboxes.length > 1) {
+                        chunkCheckboxes(fokusCheckboxes, targetSessions, sessionIndex);
                     }
                 }
 
@@ -473,13 +589,12 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                 const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
                 
                 allCbs.forEach(cb => {
-                    // Abaikan checkbox kawalan (selectAll/deselectAll)
                     if (cb.id && cb.id.startsWith('selectControl')) return;
                     
                     if (!targetCheckboxes.includes(cb)) {
                         if (!cb.checked && !cb.disabled) {
                             cb.click();
-                            cb.checked = true; // Paksa tandakan sekiranya click() diabaikan
+                            cb.checked = true;
                         }
                     }
                 });

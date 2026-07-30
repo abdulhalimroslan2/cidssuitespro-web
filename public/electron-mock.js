@@ -10,69 +10,112 @@ const getHttp = () => {
     return (cap && cap.Plugins && cap.Plugins.CapacitorHttp) ? cap.Plugins.CapacitorHttp : null;
 };
 
-function getDecryptedSettings() {
-    const data = localStorage.getItem('cids_settings');
-    if (!data) return { username: '', password: '', apiKey: '', deepseekApiKey: '' };
+async function getDecryptedSettings() {
+    let raw = {};
     try {
-        const parsed = JSON.parse(data);
-        const username = parsed.username || '';
-        
-        const decrypt = (val) => {
-            if (!val) return '';
-            try { return decodeURIComponent(atob(val)); } catch(e) {}
-            return val;
-        };
+        if (window.electronAPI && typeof window.electronAPI.getSettings === 'function') {
+            raw = await window.electronAPI.getSettings();
+        }
+    } catch(e) {}
 
-        return {
-            username: username,
-            password: decrypt(parsed.password),
-            apiKey: decrypt(parsed.apiKey),
-            deepseekApiKey: decrypt(parsed.deepseekApiKey)
-        };
-    } catch(e) {
-        return { username: '', password: '', apiKey: '', deepseekApiKey: '' };
-    }
+    const decrypt = (val) => {
+        if (!val) return '';
+        try { return decodeURIComponent(atob(val)); } catch(e) {}
+        try { return atob(val); } catch(e) {}
+        return val;
+    };
+
+    return {
+        username: raw.username || '',
+        password: decrypt(raw.password),
+        apiKey: decrypt(raw.apiKey),
+        deepseekApiKey: decrypt(raw.deepseekApiKey)
+    };
 }
 
 window.electronAPI = {
     encryptData: async (text) => btoa(encodeURIComponent(text || '')),
     decryptData: async (base64) => {
         if (!base64) return '';
-        try { return decodeURIComponent(atob(base64)); } catch(e) { return base64; }
+        try { return decodeURIComponent(atob(base64)); } catch(e) {}
+        try { return atob(base64); } catch(e) {}
+        return base64;
     },
-    getSettings: async () => {
-        const data = localStorage.getItem('cids_settings');
-        let parsed = data ? JSON.parse(data) : {};
-        if (!parsed.username) parsed.username = "";
-        if (!parsed.password) parsed.password = "";
-        return parsed;
+    getSettings: () => {
+        return new Promise((resolve) => {
+            // First check memory cache
+            try { if (window.top && window.top._cids_settings_cache) { resolve(window.top._cids_settings_cache); return; } } catch(e) {}
+            try { if (window.parent && window.parent._cids_settings_cache) { resolve(window.parent._cids_settings_cache); return; } } catch(e) {}
+            try { if (window._cids_settings_cache) { resolve(window._cids_settings_cache); return; } } catch(e) {}
+
+            // Wait for postMessage reply from Top Window
+            const listener = (event) => {
+                if (event.data && event.data.type === 'provide-settings') {
+                    window.removeEventListener('message', listener);
+                    resolve(event.data.settings || {});
+                }
+            };
+            window.addEventListener('message', listener);
+            
+            try { if (window.parent) window.parent.postMessage({ type: 'request-settings' }, '*'); } catch(e) {}
+            try { if (window.top) window.top.postMessage({ type: 'request-settings' }, '*'); } catch(e) {}
+            
+            // Timeout fallback
+            setTimeout(() => {
+                window.removeEventListener('message', listener);
+                let data = null;
+                try { data = localStorage.getItem('cids_settings'); } catch(e) {}
+                if (!data) { try { if (window.parent && window.parent.localStorage) data = window.parent.localStorage.getItem('cids_settings'); } catch(e) {} }
+                if (!data) { try { if (window.top && window.top.localStorage) data = window.top.localStorage.getItem('cids_settings'); } catch(e) {} }
+                if (!data) { try { data = sessionStorage.getItem('cids_settings'); } catch(e) {} }
+                let parsed = (typeof data === 'object') ? data : (data ? JSON.parse(data) : {});
+                if (!parsed.username) parsed.username = "";
+                if (!parsed.password) parsed.password = "";
+                resolve(parsed);
+            }, 300);
+        });
     },
     saveSettings: async (settings) => {
-        localStorage.setItem('cids_settings', JSON.stringify(settings));
+        try { window._cids_settings_cache = settings; } catch(e) {}
+        try { if (window.parent) window.parent._cids_settings_cache = settings; } catch(e) {}
+        try { if (window.top) window.top._cids_settings_cache = settings; } catch(e) {}
+
+        try { localStorage.setItem('cids_settings', JSON.stringify(settings)); } catch(e) {}
+        try { if (window.parent && window.parent.localStorage) window.parent.localStorage.setItem('cids_settings', JSON.stringify(settings)); } catch(e) {}
+        try { if (window.top && window.top.localStorage) window.top.localStorage.setItem('cids_settings', JSON.stringify(settings)); } catch(e) {}
+        try { sessionStorage.setItem('cids_settings', JSON.stringify(settings)); } catch(e) {}
+
+        try {
+            if (window.parent) window.parent.postMessage({ type: 'cids-save-settings', settings }, '*');
+            if (window.top && window.top !== window.parent) window.top.postMessage({ type: 'cids-save-settings', settings }, '*');
+        } catch(e) {}
+
         try {
             if (typeof top !== 'undefined' && typeof top.updateSystemStatus === 'function') top.updateSystemStatus();
             else if (window.parent && typeof window.parent.updateSystemStatus === 'function') window.parent.updateSystemStatus();
         } catch(e) {}
         
-        // Notify parent and frames to clear old user's RPT cache and fetch fresh list
         try {
             window.postMessage({ type: 'clear-rpt-cache' }, '*');
             if (window.parent) window.parent.postMessage({ type: 'clear-rpt-cache' }, '*');
         } catch(e) {}
 
-        // Fetch fresh RPT list for new username asynchronously
         setTimeout(() => {
-            window.electronAPI.getRptList().then(newList => {
-                if (window.electronAPI._rptListCallbacks) {
-                    window.electronAPI._rptListCallbacks.forEach(cb => cb(newList));
+            try {
+                if (window.electronAPI && typeof window.electronAPI.getRptList === 'function') {
+                    window.electronAPI.getRptList().then(newList => {
+                        if (window.electronAPI && window.electronAPI._rptListCallbacks) {
+                            window.electronAPI._rptListCallbacks.forEach(cb => cb(newList));
+                        }
+                    }).catch(e => console.warn('Async getRptList error after saveSettings:', e));
                 }
-            });
+            } catch(e) {}
         }, 100);
 
         return { success: true };
     },
     checkSystemStatus: async () => {
-        const parsed = getDecryptedSettings();
+        const parsed = await getDecryptedSettings();
         const hasCredentials = !!(parsed.username && parsed.password);
         let hasUserKey = false;
         if (parsed.apiKey) {
@@ -205,8 +248,8 @@ window.electronAPI = {
         window.electronAPI.getRptList().then(list => callback(list));
     },
     hideRptView: () => {},
-    getRptList: async () => {
-        const settings = getDecryptedSettings();
+    getRptList: async (options = {}) => {
+        const settings = await getDecryptedSettings();
         const username = settings.username;
         const password = settings.password;
 
@@ -423,11 +466,52 @@ window.electronAPI = {
                 }
             });
         } else {
-            self._rptLog('Rekod Minggu ke-' + mingguNum + ' berjaya diisi & disimpan ke ASIE Model!');
-            setTimeout(function() {
+            // WEB MODE (Browser / iFrame / Web App)
+            const scriptStr = window.electronAPI._buildMobileFillScript(item);
+
+            function executeFillInDOM() {
+                try {
+                    let win = window;
+                    if (window.opener && !window.opener.closed) win = window.opener;
+                    else if (window.parent && window.parent !== window) win = window.parent;
+                    else if (window.top && window.top !== window) win = window.top;
+
+                    let targetWin = win;
+                    let doc = win.document;
+                    if (!doc.querySelector('input[name="miw_name"], #miw_name, input[name="date_from"], #select_Theme')) {
+                        const iframes = Array.from(doc.querySelectorAll('iframe'));
+                        for (let f of iframes) {
+                            try {
+                                if (f.contentDocument && f.contentDocument.querySelector('input[name="miw_name"], #miw_name, input[name="date_from"], #select_Theme')) {
+                                    targetWin = f.contentWindow;
+                                    break;
+                                }
+                            } catch(e) {}
+                        }
+                    }
+
+                    if (targetWin.eval) {
+                        return targetWin.eval(scriptStr) === true;
+                    }
+                } catch(e) {
+                    console.error("DOM Fill error:", e);
+                }
+                return false;
+            }
+
+            const success = executeFillInDOM();
+            if (success) {
+                self._rptLog('Rekod Minggu ke-' + mingguNum + ' berjaya diisi & disimpan ke ASIE Model!');
+                setTimeout(function() {
+                    self._rptFillActive = false;
+                    self._processRptQueue();
+                }, 2500);
+            } else {
+                self._rptLog('Borang CIDS/ASIE belum sedia atau medan tidak dijumpai. Menunggu 2s...');
+                self._rptFillQueue.unshift(item);
                 self._rptFillActive = false;
-                self._processRptQueue();
-            }, 1200);
+                setTimeout(function() { self._processRptQueue(); }, 2000);
+            }
         }
     },
     _buildMobileFillScript: function(data) {
@@ -436,31 +520,210 @@ window.electronAPI = {
             var d = ${d};
             var fieldsFilled = 0;
 
+            function sleep(ms) {
+                return new Promise(function(r) { setTimeout(r, ms); });
+            }
+
             function setNative(el, value) {
-                if (!el || value === undefined) return;
+                if (!el || value === undefined || value === null) return;
                 try {
+                    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+                    el.focus();
                     var nativeSetter;
-                    if (el.tagName === 'TEXTAREA') {
+                    if (el.isContentEditable) {
+                        el.textContent = value;
+                    } else if (el.tagName === 'TEXTAREA') {
                         nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value') && Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
                     } else if (el.tagName === 'SELECT') {
                         nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value') && Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+                        var matchedOption = Array.from(el.options).find(function(opt) { return opt.text.toLowerCase().includes(String(value).toLowerCase().trim()) || opt.value.toLowerCase() === String(value).toLowerCase().trim(); });
+                        if (matchedOption) value = matchedOption.value;
                     } else {
                         nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value') && Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                     }
-                    if (nativeSetter) nativeSetter.call(el, value);
-                    else el.value = value;
-                } catch(e) { el.value = value; }
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-                el.dispatchEvent(new Event('change', { bubbles: true }));
-                fieldsFilled++;
+
+                    var lines = (typeof value === 'string' && el.tagName !== 'TEXTAREA' && !el.isContentEditable) ? value.split(String.fromCharCode(92)+'n').join(String.fromCharCode(10)).split(String.fromCharCode(10)) : [value];
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i];
+                        if (typeof line === 'string') line = line.trim();
+                        if (!line) continue;
+
+                        el.focus();
+                        el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+                        if (nativeSetter) nativeSetter.call(el, line);
+                        else if (!el.isContentEditable) el.value = line;
+
+                        el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+                        el.dispatchEvent(new KeyboardEvent('keyup', { key: line.slice(-1) || 'a', bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+                        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40, bubbles: true }));
+                        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+                        el.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+                    }
+
+                    el.setAttribute('data-ai-filled', 'true');
+                    el.blur();
+                    fieldsFilled++;
+                } catch(e) { console.error('setNative error:', e); }
             }
 
-            function ensureOption(selectId, textVal) {
-                var sel = document.getElementById(selectId);
-                if (!sel) return false;
-                if (!textVal) return false;
+            function findInputByTextOrName(keywords) {
+                var allVisibleInputs = Array.from(document.querySelectorAll('input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([data-ai-filled="true"]), textarea:not([data-ai-filled="true"]), select:not([data-ai-filled="true"])'));
+                var matchingInputs = [];
 
-                var lines = Array.isArray(textVal) ? textVal : String(textVal).split('\\n');
+                for (var k = 0; k < keywords.length; k++) {
+                    var kw = keywords[k];
+                    var attrKw = kw.toLowerCase().replace(/ /g, '_');
+                    for (var i = 0; i < allVisibleInputs.length; i++) {
+                        var el = allVisibleInputs[i];
+                        if ((el.placeholder && el.placeholder.toLowerCase().includes(kw.toLowerCase())) ||
+                            (el.name && el.name.toLowerCase().includes(attrKw)) ||
+                            (el.id && el.id.toLowerCase().includes(attrKw)) ||
+                            (el.className && el.className.toLowerCase().includes(attrKw)) ||
+                            (el.getAttribute('aria-label') && el.getAttribute('aria-label').toLowerCase().includes(kw.toLowerCase()))) {
+                            if (!matchingInputs.includes(el)) matchingInputs.push(el);
+                        }
+                        if (!matchingInputs.includes(el)) {
+                            var td = el.closest('td');
+                            var label = el.closest('label');
+                            if (td && td.textContent.toLowerCase().includes(kw.toLowerCase())) {
+                                matchingInputs.push(el);
+                            } else if (label && label.textContent.toLowerCase().includes(kw.toLowerCase())) {
+                                matchingInputs.push(el);
+                            }
+                        }
+                    }
+                }
+
+                if (matchingInputs.length > 0) {
+                    var emptyMatches = matchingInputs.filter(function(el) { return !el.value || el.value.trim() === ""; });
+                    if (emptyMatches.length > 0) return emptyMatches[0];
+                    return matchingInputs[0];
+                }
+
+                var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+                var node;
+                var closeNodes = [];
+                while (node = walker.nextNode()) {
+                    if (node.textContent.trim().length > 0 && keywords.some(function(kw) { return node.textContent.trim().toLowerCase().includes(kw.toLowerCase()); })) {
+                        closeNodes.push(node);
+                    }
+                }
+
+                if (closeNodes.length > 0) {
+                    for (var j = 0; j < closeNodes.length; j++) {
+                        var match = closeNodes[j];
+                        var parent = match.parentElement;
+                        var distance = 0;
+                        while (parent && distance < 6) {
+                            var inputs = Array.from(parent.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([data-ai-filled="true"]), textarea:not([data-ai-filled="true"]), select:not([data-ai-filled="true"])'));
+                            if (inputs.length > 0) {
+                                var emptyInputs = inputs.filter(function(el) { return !el.value || el.value.trim() === ""; });
+                                return emptyInputs.length > 0 ? emptyInputs[0] : inputs[0];
+                            }
+                            parent = parent.parentElement;
+                            distance++;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            function tryFindAndFill(keywords, value) {
+                if (!value) return;
+                var el = findInputByTextOrName(keywords);
+                if (el) {
+                    setNative(el, value);
+                }
+            }
+
+            function fillByProximityToText(textKeyword, valuesToFill) {
+                if (!valuesToFill || valuesToFill.length === 0) return false;
+                var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+                var node;
+                var allMatchingNodes = [];
+                while (node = walker.nextNode()) {
+                    if (node.textContent.toLowerCase().includes(textKeyword.toLowerCase())) {
+                        allMatchingNodes.push(node);
+                    }
+                }
+
+                if (allMatchingNodes.length > 0) {
+                    var targetTextNode = allMatchingNodes[0];
+                    var allInputs = Array.from(document.querySelectorAll('input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([data-ai-filled="true"]), textarea:not([data-ai-filled="true"]), select:not([data-ai-filled="true"])'));
+
+                    var preceding = [];
+                    for (var i = 0; i < allInputs.length; i++) {
+                        var el = allInputs[i];
+                        var pos = targetTextNode.compareDocumentPosition(el);
+                        if (pos & Node.DOCUMENT_POSITION_PRECEDING) {
+                            preceding.push(el);
+                        }
+                    }
+
+                    var emptyPreceding = preceding.filter(function(el) { return !el.value || el.value.trim() === ""; });
+                    if (emptyPreceding.length < valuesToFill.length) emptyPreceding = preceding;
+
+                    var closest = emptyPreceding.slice(-valuesToFill.length);
+                    if (closest.length === valuesToFill.length) {
+                        for (var j = 0; j < valuesToFill.length; j++) {
+                            setNative(closest[j], valuesToFill[j]);
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // 1. Nama Rekod
+            var elNama = document.getElementById('miw_name') || document.querySelector('input[name="miw_name"]') || document.querySelector('input[name="nama_rekod"]');
+            if (elNama) {
+                setNative(elNama, d.namaRekodForm);
+            } else {
+                tryFindAndFill(["Nama Rekod", "nama rekod", "Isi nama rekod"], d.namaRekodForm);
+            }
+
+            // 2. Tarikh
+            var elDateFrom = document.querySelector('input[name="date_from"]');
+            var elDateTo = document.querySelector('input[name="date_to"]');
+            if (elDateFrom) setNative(elDateFrom, d.tarikhDari);
+            if (elDateTo) setNative(elDateTo, d.tarikhHingga);
+
+            if (!elDateFrom || !elDateTo) {
+                var tarikhDiisi = fillByProximityToText("mengubah penetapan tarikh", [d.tarikhDari, d.tarikhHingga]);
+                if (!tarikhDiisi) tarikhDiisi = fillByProximityToText("tarikh dari", [d.tarikhDari, d.tarikhHingga]);
+                if (!tarikhDiisi) {
+                    tryFindAndFill(["Tarikh Dari", "tarikh_dari"], d.tarikhDari);
+                    tryFindAndFill(["Tarikh Hingga", "tarikh_hingga"], d.tarikhHingga);
+                }
+            }
+
+            // 3. Minggu Kalendar
+            var mingguDiisi = false;
+            if (d.mingguKalendar) {
+                var elWeekFrom = document.querySelector('input[name="week_from"]');
+                var elWeekTo = document.querySelector('input[name="week_to"]');
+                if (elWeekFrom) setNative(elWeekFrom, d.mingguKalendar);
+                if (elWeekTo) setNative(elWeekTo, d.mingguKalendar);
+                
+                if (!elWeekFrom || !elWeekTo) {
+                    mingguDiisi = fillByProximityToText("memilih minggu pengajaran", [d.mingguKalendar, d.mingguKalendar]);
+                    if (!mingguDiisi) {
+                        var mDari = findInputByTextOrName(["kalendar dari", "minggu kalendar", "miw_week_start"]);
+                        if (mDari) { setNative(mDari, d.mingguKalendar); mingguDiisi = true; }
+                        var mHingga = findInputByTextOrName(["kalendar hingga", "minggu hingga", "miw_week_end"]);
+                        if (mHingga) { setNative(mHingga, d.mingguKalendar); mingguDiisi = true; }
+                    }
+                }
+            }
+
+            // 4. Tema, Bidang, SK, SP
+            function ensureOption(selectId, textVal) {
+                var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
+                if (!sel || !textVal) return false;
+
+                var lines = Array.isArray(textVal) ? textVal : String(textVal).split(String.fromCharCode(92)+'n').join(String.fromCharCode(10)).split(String.fromCharCode(10));
                 lines = lines.map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
                 if (lines.length === 0) return false;
 
@@ -477,36 +740,64 @@ window.electronAPI = {
                 return true;
             }
 
-            // 1. Direct ASIE Model ID selectors
-            var elNama = document.getElementById('miw_name') || document.querySelector('input[name="miw_name"]');
-            if (elNama) setNative(elNama, d.namaRekodForm);
-
-            var elDateFrom = document.getElementById('date_from') || document.querySelector('input[name="date_from"]');
-            var elDateTo = document.getElementById('date_to') || document.querySelector('input[name="date_to"]');
-            if (elDateFrom) setNative(elDateFrom, d.tarikhDari);
-            if (elDateTo) setNative(elDateTo, d.tarikhHingga);
-
-            if (d.mingguKalendar) {
-                var elWeekFrom = document.getElementById('miw_week_start') || document.querySelector('input[name="week_from"]');
-                var elWeekTo = document.getElementById('miw_week_end') || document.querySelector('input[name="week_to"]');
-                if (elWeekFrom) setNative(elWeekFrom, d.mingguKalendar);
-                if (elWeekTo) setNative(elWeekTo, d.mingguKalendar);
+            function findVisibleInputFor(selectId) {
+                var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
+                if (sel) {
+                    var container = sel.closest('li, td, div.column, div.cell') || sel.parentElement;
+                    if (container) {
+                        var input = container.querySelector('input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea');
+                        if (input) return input;
+                    }
+                }
+                return null;
             }
 
-            ensureOption('select_Theme', d.bidangPembelajaran || 'Umum');
-            ensureOption('select_Learning_Area', d.tajukPembelajaran || 'Umum');
-            ensureOption('select_standard_kandungan', d.standardKandungan || '-');
-            ensureOption('select_standard_pembelajaran', d.standardPembelajaran || '-');
-            ensureOption('select_objektif_multitext', d.objektifPembelajaran || '-');
-
-            if (d.objektifPembelajaran) {
-                var elCat = document.getElementById('rpt_remarks') || document.querySelector('textarea[name="rpt_remarks"]') || document.querySelector('input[name="rpt_remarks"]');
-                if (elCat) setNative(elCat, d.objektifPembelajaran);
+            function findInputInLi(className) {
+                var cells = Array.from(document.querySelectorAll('li.li_item.' + className + ', td.' + className + ', div.' + className));
+                if (cells.length > 0) {
+                    var el = cells[cells.length - 1];
+                    return el.querySelector('input:not([type="hidden"]):not([data-ai-filled="true"]), textarea:not([data-ai-filled="true"])');
+                }
+                return null;
             }
 
-            // 2. Execute addMIW() to save record into ASIE Model database!
+            var inputTema = findVisibleInputFor('select_Theme') || findInputInLi('Learning_Area') || findInputInLi('tema');
+            var inputBidang = findVisibleInputFor('select_Learning_Area') || findInputInLi('Tajuk') || findInputInLi('bidang_pembelajaran');
+            var inputSK = findVisibleInputFor('select_standard_kandungan') || findInputInLi('standard_kandungan');
+            var inputSP = findVisibleInputFor('select_standard_pembelajaran') || findInputInLi('standard_pembelajaran');
+            var inputObj = findVisibleInputFor('select_objektif_multitext') || findInputInLi('objektif');
+            var inputCatatan = document.getElementById('rpt_remarks') || document.querySelector('textarea[name="rpt_remarks"]') || document.querySelector('input[name="rpt_remarks"]') || findInputInLi('catatan');
+
+            if (d.bidangPembelajaran !== undefined) {
+                if (inputTema) setNative(inputTema, d.bidangPembelajaran);
+                ensureOption('select_Theme', d.bidangPembelajaran);
+            }
+            if (d.tajukPembelajaran !== undefined) {
+                if (inputBidang) setNative(inputBidang, d.tajukPembelajaran);
+                ensureOption('select_Learning_Area', d.tajukPembelajaran);
+            }
+            if (d.standardKandungan !== undefined) {
+                if (inputSK) setNative(inputSK, d.standardKandungan);
+                ensureOption('select_standard_kandungan', d.standardKandungan);
+            }
+            if (d.standardPembelajaran !== undefined) {
+                if (inputSP) setNative(inputSP, d.standardPembelajaran);
+                ensureOption('select_standard_pembelajaran', d.standardPembelajaran);
+            }
+            if (d.objektifPembelajaran !== undefined && d.objektifPembelajaran !== '') {
+                if (inputObj) setNative(inputObj, d.objektifPembelajaran);
+                ensureOption('select_objektif_multitext', d.objektifPembelajaran);
+            }
+            if (d.catatan !== undefined && d.catatan !== '') {
+                if (inputCatatan) setNative(inputCatatan, d.catatan);
+            } else if (d.objektifPembelajaran !== undefined && d.objektifPembelajaran !== '') {
+                // Tiru logik APK lama: Masukkan Objektif ke dalam Catatan juga jika Catatan kosong
+                if (inputCatatan) setNative(inputCatatan, d.objektifPembelajaran);
+            }
+
+            // 5. Submit
             if (typeof window.addMIW === 'function') {
-                console.log('[RPT Mobile] Memanggil window.addMIW() untuk simpan AJAX...');
+                console.log('[RPT Mobile Jari Hantu] Memanggil window.addMIW()...');
                 window.addMIW();
                 return true;
             } else {
@@ -520,7 +811,7 @@ window.electronAPI = {
                     return true;
                 }
             }
-            return false;
+            return fieldsFilled > 0;
         })();`;
     },
     fillForm: async () => { return { success: false }; },
@@ -1182,7 +1473,7 @@ PENTING: Output MESTI dalam format HTML tulen (gunakan <b>, <strong>, <p>, <ol>,
     onScheduleExtracted: (callback) => { window.electronAPI._scheduleExtractedCb = callback; },
     extractScheduleAi: async (payload) => {
         try {
-            const settings = getDecryptedSettings();
+            const settings = await getDecryptedSettings();
             let apiKey = (payload && payload.apiKey) || settings.apiKey || '';
             if (!apiKey || apiKey.trim() === '') {
                 apiKey = (typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : '');
@@ -1403,7 +1694,7 @@ Arahan Tambahan:
             const { credentials, lessons } = payload || {};
             if (window.electronAPI._automationLogCb) window.electronAPI._automationLogCb("Mula memproses dan menghantar jadual ke ASIE Model...");
 
-            const settings = getDecryptedSettings();
+            const settings = await getDecryptedSettings();
             const username = (credentials && credentials.username) || settings.username;
             const password = (credentials && credentials.password) || settings.password;
 
@@ -1681,7 +1972,7 @@ Arahan Tambahan:
     },
     fetchClassesFromAsie: async (payload) => {
         try {
-            const settings = getDecryptedSettings();
+            const settings = await getDecryptedSettings();
             const username = (payload && payload.username) || settings.username;
             const password = (payload && payload.password) || settings.password;
 
@@ -1794,7 +2085,7 @@ Arahan Tambahan:
         }
     },
     fetchScheduleFromAsie: async () => {
-        const settings = getDecryptedSettings();
+        const settings = await getDecryptedSettings();
         const username = settings.username;
         const password = settings.password;
 

@@ -3,5 +3,14 @@
   "buildCommand": "next build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "regions": ["sin1"]
+  "regions": ["sin1"],
+  "functions": {
+    "app/api/get-rpt-list/route.js": { "maxDuration": 60 },
+    "app/api/get-schedule/route.js": { "maxDuration": 60 },
+    "app/api/delete-rph/route.js": { "maxDuration": 60 },
+    "app/api/submit-rph/route.js": { "maxDuration": 60 },
+    "app/api/fill-rpt/route.js": { "maxDuration": 60 },
+    "app/api/generate-rph/route.js": { "maxDuration": 60 },
+    "app/api/extract-schedule-ai/route.js": { "maxDuration": 60 }
+  }
 }

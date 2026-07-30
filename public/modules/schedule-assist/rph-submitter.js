@@ -271,6 +271,10 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
             }
             
             if (totalSlots === 0) {
+                 console.log(`Tiada slot jadual dijumpai untuk ${lesson.session_text}. Melangkau...`);
+                 await page.keyboard.press('Escape');
+                 continue;
+            }
             
             const targetSessions = totalSlots;
             
@@ -302,49 +306,38 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
             // --- LOGIK PENGAGIHAN TICK STANDARD PEMBELAJARAN (DI DALAM MODAL MIW) ---
             console.log(`Menyemak kotak pilihan (checkbox) Standard Pembelajaran di modal MIW untuk agihan Sesi ${successfulSessions + 1}...`);
             await page.evaluate(({ sessionIndex, targetSessions }) => {
-                // 1. Cuba cari elemen <ul> yang spesifik untuk Standard Pembelajaran
-                let stdUl = document.querySelector('ul.standard_pembelajaran');
-                let targetCheckboxes = [];
-                
-                if (stdUl) {
-                    targetCheckboxes = Array.from(stdUl.querySelectorAll('input[type="checkbox"]'));
-                }
-                
-                // 2. Jika tiada, cuba guna regex untuk cari label berangka (cth: 1.1.1)
-                if (targetCheckboxes.length === 0) {
-                    const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-                    targetCheckboxes = allCbs.filter(cb => {
-                        const parentText = cb.parentElement?.textContent || '';
-                        const nextText = cb.nextSibling?.textContent || '';
-                        // Cari teks yang mempunyai corak bernombor seperti 1.1.1 atau nombor Jawi/Arab ١.١.١
-                        const hasNumber = /\d+\.\d+\.\d+/.test(parentText) || /\d+\.\d+\.\d+/.test(nextText);
-                        const hasArabicNumber = /[\u0660-\u0669]+\.[\u0660-\u0669]+\.[\u0660-\u0669]+/.test(parentText) || /[\u0660-\u0669]+\.[\u0660-\u0669]+\.[\u0660-\u0669]+/.test(nextText);
-                        return hasNumber || hasArabicNumber;
-                    });
-                }
-                
-                // Jika masih gagal, ambil semua checkbox dalam senarai yang kelihatan seperti item RPT
-                if (targetCheckboxes.length === 0) {
-                    const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-                    // HANYA anggap ia Standard Pembelajaran jika ada lebih daripada 3 kotak wajib!
-                    if (allCbs.length > 3) {
-                        targetCheckboxes = allCbs.slice(3); // Ambil baki sebagai Standard Pembelajaran
+                const getItemText = (cb) => {
+                    let text = '';
+                    if (cb.nextElementSibling && cb.nextElementSibling.textContent) {
+                        text = cb.nextElementSibling.textContent.trim();
                     }
-                }
-                
-                if (targetCheckboxes.length === 0) {
-                    console.log("Amaran: Tiada kotak Standard Pembelajaran dijumpai untuk ditanda.");
-                }
-                
-                if (targetCheckboxes.length > 1 && targetSessions > 1) {
-                    const N = targetCheckboxes.length;
-                    const S = targetSessions;
+                    if (!text && cb.nextSibling && cb.nextSibling.textContent) {
+                        text = cb.nextSibling.textContent.trim();
+                    }
+                    if (!text && cb.parentElement && ['LI', 'LABEL', 'SPAN', 'DIV'].includes(cb.parentElement.tagName) && !['UL', 'OL', 'FORM', 'BODY'].includes(cb.parentElement.tagName)) {
+                        text = cb.parentElement.textContent.trim();
+                    }
+                    if (!text) {
+                        text = (cb.getAttribute('name') || cb.value || '').trim();
+                    }
+                    return text;
+                };
+
+                const getPrefixFromText = (str) => {
+                    if (!str) return null;
+                    const match = str.match(/([\d\u0660-\u0669]+(\.[\d\u0660-\u0669]+)+)/);
+                    if (!match) return null;
+                    return match[1];
+                };
+
+                const chunkCheckboxes = (checkboxes, S, sIndex) => {
+                    if (!checkboxes || checkboxes.length <= 1) return;
+                    const N = checkboxes.length;
                     const chunks = Array.from({ length: S }, () => []);
                     const baseSize = Math.floor(N / S);
                     const remainder = N % S;
                     let itemIndex = 0;
                     
-                    // Bahagikan indeks checkbox kepada chunks
                     for (let j = 0; j < S; j++) {
                         let size = baseSize + (j < remainder ? 1 : 0);
                         for (let k = 0; k < size; k++) {
@@ -352,33 +345,155 @@ async function submitRPH(lessons, miwDate, credentials = {}, apiKey = null, bbm 
                         }
                     }
                     
-                    const myChunk = chunks[sessionIndex] || [];
+                    const myChunk = chunks[sIndex] || [];
+                    if (myChunk.length === 0) {
+                        myChunk.push(N - 1);
+                    }
                     
-                    // Tick yang sepatutnya ditick, Untick yang sepatutnya diuntick
                     for (let j = 0; j < N; j++) {
-                        const cb = targetCheckboxes[j];
+                        const cb = checkboxes[j];
                         if (!cb.disabled) {
                             const shouldBeChecked = myChunk.includes(j);
                             if (shouldBeChecked && !cb.checked) {
-                                cb.click(); // Tick
+                                cb.click();
                             } else if (!shouldBeChecked && cb.checked) {
-                                cb.click(); // Untick
+                                cb.click();
                             }
                         }
                     }
+                };
+
+                let findUlByTitle = (titleText) => {
+                    let uls = document.querySelectorAll('li.ititle');
+                    for (let li of uls) {
+                        if (li.textContent.toLowerCase().includes(titleText.toLowerCase())) {
+                            return li.querySelector('ul');
+                        }
+                    }
+                    return null;
+                };
+
+                let skUl = findUlByTitle('standard kandungan') || document.querySelector('ul.standard_kandungan');
+                let spUl = findUlByTitle('standard pembelajaran') || document.querySelector('ul.standard_pembelajaran');
+                let temaUl = findUlByTitle('tema') || document.querySelector('ul.tema') || findUlByTitle('bidang pembelajaran') || document.querySelector('ul.bidang_pembelajaran');
+                let fokusUl = findUlByTitle('fokus') || document.querySelector('ul.fokus');
+                
+                let skCheckboxes = skUl ? Array.from(skUl.querySelectorAll('input[type="checkbox"]')) : [];
+                let spCheckboxes = spUl ? Array.from(spUl.querySelectorAll('input[type="checkbox"]')) : [];
+                let temaCheckboxes = temaUl ? Array.from(temaUl.querySelectorAll('input[type="checkbox"]')) : [];
+                let fokusCheckboxes = fokusUl ? Array.from(fokusUl.querySelectorAll('input[type="checkbox"]')) : [];
+                
+                if (spCheckboxes.length === 0) {
+                    const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+                    spCheckboxes = allCbs.filter(cb => {
+                        const text = getItemText(cb);
+                        return /[\d\u0660-\u0669]+\.[\d\u0660-\u0669]+\.[\d\u0660-\u0669]+/.test(text);
+                    });
+                }
+                
+                if (skCheckboxes.length === 0) {
+                    const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+                    skCheckboxes = allCbs.filter(cb => {
+                        if (spCheckboxes.includes(cb)) return false;
+                        const text = getItemText(cb);
+                        return /^\s*[\d\u0660-\u0669]+\.[\d\u0660-\u0669]+(\s|$)/.test(text);
+                    });
+                }
+                
+                if (spCheckboxes.length === 0 && skCheckboxes.length === 0) {
+                    const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+                    if (allCbs.length > 3) {
+                        spCheckboxes = allCbs.slice(3);
+                    }
+                }
+                
+                let targetCheckboxes = [...skCheckboxes, ...spCheckboxes, ...temaCheckboxes, ...fokusCheckboxes];
+                
+                if (targetSessions > 1) {
+                    if (spCheckboxes.length > 1) {
+                        chunkCheckboxes(spCheckboxes, targetSessions, sessionIndex);
+                    }
+                    
+                    const activeSPs = spCheckboxes.filter(cb => cb.checked);
+                    let skPrefixesNeeded = new Set();
+                    let temaPrefixesNeeded = new Set();
+                    
+                    activeSPs.forEach(cb => {
+                        const txt = getItemText(cb);
+                        const fullNum = getPrefixFromText(txt);
+                        if (fullNum) {
+                            const parts = fullNum.split('.');
+                            const skPrefix = parts.length >= 2 ? parts.slice(0, parts.length - 1).join('.') : fullNum;
+                            skPrefixesNeeded.add(skPrefix);
+                            
+                            const majorNum = parts[0];
+                            temaPrefixesNeeded.add(majorNum);
+                            temaPrefixesNeeded.add(majorNum + '.0');
+                        }
+                    });
+                    
+                    if (skCheckboxes.length > 0 && skPrefixesNeeded.size > 0) {
+                        const targetPrefixes = Array.from(skPrefixesNeeded);
+                        skCheckboxes.forEach(cb => {
+                            if (!cb.disabled) {
+                                const txt = getItemText(cb);
+                                const fullNum = getPrefixFromText(txt) || txt.match(/^([\d\u0660-\u0669]+(\.[\d\u0660-\u0669]+)*)/)?.[1];
+                                let shouldBeChecked = false;
+                                if (fullNum) {
+                                    shouldBeChecked = targetPrefixes.some(p => fullNum === p || fullNum.startsWith(p + '.') || p.startsWith(fullNum + '.'));
+                                } else {
+                                    shouldBeChecked = true;
+                                }
+                                
+                                if (shouldBeChecked && !cb.checked) {
+                                    cb.click();
+                                } else if (!shouldBeChecked && cb.checked) {
+                                    cb.click();
+                                }
+                            }
+                        });
+                    }
+                    
+                    if (temaCheckboxes.length > 0 && temaPrefixesNeeded.size > 0) {
+                        const targetTemaPrefixes = Array.from(temaPrefixesNeeded);
+                        temaCheckboxes.forEach(cb => {
+                            if (!cb.disabled) {
+                                const txt = getItemText(cb);
+                                const fullNum = getPrefixFromText(txt) || txt.match(/^([\d\u0660-\u0669]+(\.[\d\u0660-\u0669]+)*)/)?.[1];
+                                let shouldBeChecked = false;
+                                if (fullNum) {
+                                    const parts = fullNum.split('.');
+                                    const majorNum = parts[0];
+                                    const majorNumZero = parts.length >= 2 ? parts.slice(0, 2).join('.') : parts[0] + '.0';
+                                    shouldBeChecked = targetTemaPrefixes.some(p => 
+                                        fullNum === p || fullNum.startsWith(p + '.') || p.startsWith(fullNum + '.') ||
+                                        majorNum === p || majorNumZero === p
+                                    );
+                                } else {
+                                    shouldBeChecked = true;
+                                }
+                                
+                                if (shouldBeChecked && !cb.checked) {
+                                    cb.click();
+                                } else if (!shouldBeChecked && cb.checked) {
+                                    cb.click();
+                                }
+                            }
+                        });
+                    }
+                    
+                    if (fokusCheckboxes.length > 1) {
+                        chunkCheckboxes(fokusCheckboxes, targetSessions, sessionIndex);
+                    }
                 }
 
-                // PASTIKAN SEMUA KOTAK WAJIB (Kelas, Subjek, Tema, dll) DITANDA
                 const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-                
                 allCbs.forEach(cb => {
-                    // Abaikan checkbox kawalan (selectAll/deselectAll)
                     if (cb.id && cb.id.startsWith('selectControl')) return;
-                    
                     if (!targetCheckboxes.includes(cb)) {
                         if (!cb.checked && !cb.disabled) {
                             cb.click();
-                            cb.checked = true; // Paksa tandakan sekiranya click() diabaikan
+                            cb.checked = true;
                         }
                     }
                 });

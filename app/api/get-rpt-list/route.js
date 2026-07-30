@@ -91,12 +91,12 @@ export async function POST(request) {
         if (!finalPhpsessid || !loginSuccess) {
             console.log(`[get-rpt-list Route] Login failed for ${username} (Cloudflare block on Vercel). Returning dummy RPT sandbox items.`);
             const dummyItems = [
-                { id: 'rpt-demo-1', title: 'RPT Matematik Tahun 2 (2026)', year: '2026', subject: 'Matematik', active: true },
-                { id: 'rpt-demo-2', title: 'RPT Bahasa Inggeris Tahun 2 (2026)', year: '2026', subject: 'Bahasa Inggeris', active: true },
-                { id: 'rpt-demo-3', title: 'RPT Sains Tahun 2 (2026)', year: '2026', subject: 'Sains', active: true },
-                { id: 'rpt-demo-4', title: 'RPT Bahasa Melayu Tahun 2 (2026)', year: '2026', subject: 'Bahasa Melayu', active: true }
+                { title: 'RPT Matematik Tingkatan 2 (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=sandbox1&s=mathematics&cl=form2' },
+                { title: 'RPT Bahasa Inggeris Tingkatan 2 (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=sandbox2&s=english&cl=form2' },
+                { title: 'RPT Sains Tingkatan 2 (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=sandbox3&s=science&cl=form2' },
+                { title: 'RPT Bahasa Melayu Tingkatan 2 (2026)', url: 'https://asiemodel.net/model/rpt9.php?action=create_rpt&id=sandbox4&s=bm&cl=form2' }
             ];
-            return Response.json({ success: true, items: dummyItems, fallback: true });
+            return Response.json({ success: true, data: dummyItems, fallback: true });
         }
 
         // Step 3: GET search9.php
