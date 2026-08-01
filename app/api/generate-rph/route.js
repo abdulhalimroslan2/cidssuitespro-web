@@ -1,7 +1,52 @@
 // POST /api/generate-rph
 // Server-side RPH generation using AI (Gemini / OpenRouter)
+// With auto-retry, rate-limit delay, and fallback models
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Models to try in order (fallback chain)
+const GEMINI_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash',
+];
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function tryGemini(apiKey, prompt, retries = 2) {
+  const genAI = new GoogleGenerativeAI(apiKey);
+
+  for (const modelName of GEMINI_MODELS) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        console.log(`[generate-rph] Trying ${modelName} (attempt ${attempt + 1})`);
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(prompt);
+        const rawText = result.response.text();
+        const json = extractJSON(rawText);
+        if (json) return json;
+      } catch (err) {
+        const is429 = err.message?.includes('429') || err.message?.includes('quota');
+        if (is429 && attempt < retries) {
+          // Extract retry delay from error or use default
+          const delayMatch = err.message.match(/retry in (\d+)/i);
+          const waitSec = delayMatch ? parseInt(delayMatch[1]) + 2 : 40;
+          console.log(`[generate-rph] Rate limited on ${modelName}. Waiting ${waitSec}s...`);
+          await sleep(waitSec * 1000);
+          continue;
+        }
+        if (is429) {
+          console.log(`[generate-rph] ${modelName} exhausted, trying next model...`);
+          break; // Try next model
+        }
+        throw err; // Non-429 error, propagate
+      }
+    }
+  }
+  return null; // All models exhausted
+}
 
 export async function POST(request) {
   try {
@@ -70,16 +115,15 @@ PENTING: Jawab dalam Bahasa Melayu. Output WAJIB JSON sahaja.`;
       const rawText = orData.choices?.[0]?.message?.content || '';
       rphContent = extractJSON(rawText);
     } else {
-      // Google Gemini SDK
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const result = await model.generateContent(prompt);
-      const rawText = result.response.text();
-      rphContent = extractJSON(rawText);
+      // Google Gemini SDK — with retry & model fallback
+      rphContent = await tryGemini(apiKey, prompt);
     }
 
     if (!rphContent) {
-      return Response.json({ success: false, error: 'Gagal mengekstrak JSON dari respons AI.' }, { status: 500 });
+      return Response.json({
+        success: false,
+        error: 'Kuota API habis untuk semua model. Sila tunggu beberapa minit atau guna API Key baharu dari https://aistudio.google.com/apikey'
+      }, { status: 429 });
     }
 
     return Response.json({ success: true, rphContent });
@@ -95,15 +139,12 @@ PENTING: Jawab dalam Bahasa Melayu. Output WAJIB JSON sahaja.`;
 
 function extractJSON(text) {
   try {
-    // Try direct parse
     return JSON.parse(text);
   } catch {
-    // Extract from markdown code block
     const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (match) {
       try { return JSON.parse(match[1].trim()); } catch {}
     }
-    // Try to find JSON object
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       try { return JSON.parse(jsonMatch[0]); } catch {}

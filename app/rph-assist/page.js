@@ -88,6 +88,11 @@ export default function RphAssistPage() {
     addLog(`📋 ${schedule.length} kelas akan diproses...`);
     for (let i = 0; i < schedule.length; i++) {
       const lesson = schedule[i];
+      // Delay 5s between requests to avoid rate limiting
+      if (i > 0) {
+        addLog(`⏸️ Menunggu 5 saat sebelum permintaan seterusnya...`, 'info');
+        await new Promise(r => setTimeout(r, 5000));
+      }
       addLog(`⏳ [${i + 1}/${schedule.length}] Menjana RPH untuk ${lesson.subject_text} - ${lesson.session_text}...`);
       try {
         const genRes = await fetch('/api/generate-rph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey, lessonDetails: lesson, sessionIndex: i, bbm }) });
