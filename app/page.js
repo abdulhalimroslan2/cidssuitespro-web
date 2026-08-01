@@ -1,121 +1,81 @@
 'use client';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 
-const features = [
+const cards = [
   {
-    module: 'rpt',
-    title: 'RPT Assist',
-    desc: 'Jana Rancangan Pengajaran Tahunan (RPT) secara automatik dengan bantuan AI dan hantar terus ke ASIE Model.',
+    id: 'rpt',
+    label: 'RPT ASSIST',
     icon: '/assets/RPT AI ASSIST ICON.png',
+    desc: 'Jana Rancangan Pengajaran Tahunan (RPT) secara automatik berdasarkan kurikulum, standard dan data sekolah.',
+    className: 'rpt-card',
     href: '/rpt-assist',
-    color: '#7c3aed'
   },
   {
-    module: 'schedule',
-    title: 'Schedule Assist',
-    desc: 'Import jadual waktu dari ASIE Model atau upload gambar jadual untuk dianalisis oleh AI.',
+    id: 'schedule',
+    label: 'SCHEDULE ASSIST',
     icon: '/assets/SCHEDULE AI ASSIST ICON.png',
+    desc: 'Muat turun dan automasikan ekstraksi jadual waktu ke dalam sistem CIDS dengan pantas.',
+    className: 'schedule-card',
     href: '/schedule-assist',
-    color: '#16a34a'
   },
   {
-    module: 'rph',
-    title: 'RPH Assist',
-    desc: 'Automasi penulisan Rancangan Pengajaran Harian (RPH) 5E Bybee menggunakan AI dan submit ke ASIE.',
+    id: 'rph',
+    label: 'RPH ASSIST',
     icon: '/assets/RPH AI ASSIST ICON.png',
+    desc: 'Jana Rancangan Pengajaran Harian (RPH) berkualiti tinggi mengikut objektif pembelajaran dan amalan pedagogi terbaik.',
+    className: 'rph-card',
     href: '/rph-assist',
-    color: '#ea580c'
   },
   {
-    module: 'deleter',
-    title: 'RPH Deleter',
-    desc: 'Padam semua rekod RPH di bawah MIW aktif secara automatik dan serentak.',
+    id: 'deleter',
+    label: 'RPH DELETER',
     icon: '/assets/RPH DELETER ICON.png',
+    desc: 'Padam RPH yang tidak diperlukan dengan selamat dan kekalkan pengurusan fail yang teratur.',
+    className: 'deleter-card',
     href: '/rph-deleter',
-    color: '#dc2626'
+  },
+  {
+    id: 'setting',
+    label: 'SETTING',
+    icon: '/assets/SETTING ICON.png',
+    desc: 'Sesuaikan tetapan sistem, profil pengguna dan pilihan aplikasi mengikut keperluan anda.',
+    className: 'setting-card',
+    href: '/settings',
   },
 ];
 
 export default function DashboardPage() {
-  const [hasSettings, setHasSettings] = useState(false);
-  const [greeting, setGreeting] = useState('');
-
-  useEffect(() => {
-    const h = new Date().getHours();
-    if (h < 12) setGreeting('Selamat Pagi');
-    else if (h < 17) setGreeting('Selamat Petang');
-    else setGreeting('Selamat Malam');
-
-    try {
-      const raw = localStorage.getItem('cids_settings');
-      if (raw) {
-        const s = JSON.parse(raw);
-        if (s.username) setHasSettings(true);
-      }
-    } catch (e) { /* ignore */ }
-  }, []);
-
   return (
-    <div>
-      <div className="page-header">
-        <h1>{greeting}, Cikgu! 👋</h1>
-        <p>Selamat datang ke CIDS Suites Pro — versi web app.</p>
-      </div>
-
-      {!hasSettings && (
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(234,88,12,0.05))',
-          border: '1px solid rgba(245,158,11,0.2)',
-          borderRadius: '12px',
-          padding: '16px 20px',
-          marginBottom: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          <span style={{ fontSize: '24px' }}>⚙️</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: '14px', color: '#fcd34d', marginBottom: '4px' }}>
-              Tetapan Belum Lengkap
-            </div>
-            <div style={{ fontSize: '12px', color: '#d1d5db' }}>
-              Sila masukkan kredensial ASIE Model dan API Key di bahagian <strong>Setting</strong> terlebih dahulu.
+    <div className="module-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div className="dashboard-container">
+        {/* Header */}
+        <header className="dashboard-header">
+          <div style={{ textAlign: 'center' }}>
+            <img src="/assets/BRANDING.png" alt="CIDS SUITES PRO" className="dashboard-branding" />
+            <div className="subtitle-wrapper">
+              <span className="line"></span>
+              <p>AI Assists. Less Admin. More Teaching.</p>
+              <span className="line"></span>
             </div>
           </div>
-          <Link href="/settings" className="btn btn-sm btn-ghost" style={{ whiteSpace: 'nowrap' }}>
-            Buka Setting →
-          </Link>
-        </div>
-      )}
+        </header>
 
-      <div className="grid-2" style={{ marginBottom: '28px' }}>
-        {features.map((f) => (
-          <Link key={f.module} href={f.href} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="feature-card" data-module={f.module}>
-              <img src={f.icon} alt={f.title} className="card-icon" />
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
-              <div style={{ marginTop: '12px' }}>
-                <span className="badge badge-info">Buka →</span>
+        {/* Grid Cards */}
+        <div className="dashboard-grid">
+          {cards.map(card => (
+            <Link key={card.id} href={card.href} className={`dash-card ${card.className}`}>
+              <div className="dash-card-icon">
+                <img src={card.icon} alt={card.label} width={90} style={{ objectFit: 'contain' }} />
               </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      <div className="card" style={{ textAlign: 'center', padding: '32px' }}>
-        <div style={{ fontSize: '40px', marginBottom: '12px' }}>🌐</div>
-        <h3 style={{ marginBottom: '8px' }}>Versi Web App</h3>
-        <p className="text-muted text-sm" style={{ maxWidth: '500px', margin: '0 auto', lineHeight: '1.7' }}>
-          Anda sedang menggunakan versi web CIDS Suites Pro. Semua fungsi berjalan melalui pelayan (server-side) —
-          tiada pemasangan diperlukan. Boleh diakses dari mana-mana peranti termasuk telefon bimbit.
-        </p>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px', flexWrap: 'wrap' }}>
-          <span className="badge badge-success">✓ Cross-platform</span>
-          <span className="badge badge-success">✓ Tiada Install</span>
-          <span className="badge badge-success">✓ Auto-update</span>
-          <span className="badge badge-success">✓ Mobile-friendly</span>
+              <h2>{card.label}</h2>
+              <p>{card.desc}</p>
+              <div className="arrow-btn">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </div>

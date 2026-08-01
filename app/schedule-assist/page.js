@@ -4,12 +4,12 @@ import { useState, useRef } from 'react';
 export default function ScheduleAssistPage() {
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const [imagePreview, setImagePreview] = useState('');
-  const [imageBase64, setImageBase64] = useState('');
+  const [scheduleImage, setScheduleImage] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
-  const fileRef = useRef(null);
   const logRef = useRef(null);
+  const fileRef = useRef(null);
 
   function addLog(msg, type = '') {
     setLogs(prev => [...prev, { msg, type, ts: Date.now() }]);
@@ -29,200 +29,134 @@ export default function ScheduleAssistPage() {
     } catch { return {}; }
   }
 
+  async function handleFetchFromAsie() {
+    const { username, password } = getSettings();
+    if (!username) { addLog('❌ Sila masukkan kredensial ASIE di Setting.', 'error'); return; }
+    setLoading(true);
+    addLog('⏳ Mendapatkan jadual dari ASIE Model...');
+    try {
+      const res = await fetch('/api/get-schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credentials: { username, password } }) });
+      const data = await res.json();
+      if (data.success && data.schedule) {
+        setSchedule(data.schedule);
+        addLog(`✅ Berjaya mendapatkan ${data.schedule.length} slot jadual!`, 'success');
+        if (data.fallback) addLog('⚠️ Mod sandbox — jadual mungkin dummy.', 'info');
+      } else { addLog(`❌ Gagal: ${data.error || 'Unknown'}`, 'error'); }
+    } catch (e) { addLog(`❌ Ralat: ${e.message}`, 'error'); }
+    finally { setLoading(false); }
+  }
+
   function handleImageUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      setImageBase64(ev.target.result.split(',')[1]);
-      setImagePreview(ev.target.result);
-    };
+    reader.onload = (ev) => { setScheduleImage(ev.target.result.split(',')[1]); setImagePreview(ev.target.result); };
     reader.readAsDataURL(file);
   }
 
   async function handleExtractAI() {
     const { apiKey } = getSettings();
     if (!apiKey) { addLog('❌ Sila masukkan API Key di Setting.', 'error'); return; }
-    if (!imageBase64) { addLog('❌ Sila upload gambar jadual.', 'error'); return; }
-
-    setLoading(true);
-    addLog('🤖 Menganalisis jadual waktu menggunakan AI...');
+    if (!scheduleImage) { addLog('❌ Sila upload gambar jadual.', 'error'); return; }
+    setExtracting(true);
+    addLog('🤖 Menganalisis gambar jadual menggunakan AI...');
     try {
-      const res = await fetch('/api/extract-schedule-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, imageBase64 }),
-      });
+      const res = await fetch('/api/extract-schedule-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey, imageBase64: scheduleImage }) });
       const data = await res.json();
       if (data.success && data.lessons) {
-        setSchedule(data.lessons);
-        addLog(`✅ Berjaya mengekstrak ${data.lessons.length} kelas!`, 'success');
-      } else {
-        addLog(`❌ Gagal: ${data.error || 'Unknown'}`, 'error');
-      }
-    } catch (e) {
-      addLog(`❌ Ralat: ${e.message}`, 'error');
-    } finally {
-      setLoading(false);
-    }
+        const mapped = data.lessons.map((l, i) => ({ id: `ai-${i}`, day: l.day || '', className: l.session_text || l.class || '', subject: l.subject_text || l.subject || '', time: l.time || '', imported: true }));
+        setSchedule(mapped);
+        addLog(`✅ AI berjaya mengekstrak ${mapped.length} kelas!`, 'success');
+      } else { addLog(`❌ AI gagal: ${data.error || 'Unknown'}`, 'error'); }
+    } catch (e) { addLog(`❌ Ralat: ${e.message}`, 'error'); }
+    finally { setExtracting(false); }
   }
 
-  async function handleImportFromAsie() {
-    const { username, password } = getSettings();
-    if (!username) { addLog('❌ Sila masukkan kredensial di Setting.', 'error'); return; }
-
-    setLoading(true);
-    addLog('⏳ Mendapatkan jadual dari ASIE Model...');
-    try {
-      const res = await fetch('/api/get-schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credentials: { username, password } }),
-      });
-      const data = await res.json();
-      if (data.success && data.schedule) {
-        setSchedule(data.schedule);
-        addLog(`✅ Berjaya! ${data.schedule.length} slot jadual ditemui.`, 'success');
-        if (data.fallback) addLog('⚠️ Mod sandbox — data mungkin dummy.', 'info');
-      } else {
-        addLog(`❌ Gagal: ${data.error || 'Unknown'}`, 'error');
-      }
-    } catch (e) {
-      addLog(`❌ Ralat: ${e.message}`, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSubmitToAsie() {
-    const { username, password } = getSettings();
-    if (!username) { addLog('❌ Sila masukkan kredensial di Setting.', 'error'); return; }
-    if (schedule.length === 0) { addLog('❌ Tiada jadual untuk dihantar.', 'error'); return; }
-
-    setSubmitting(true);
-    addLog('🚀 Menghantar jadual ke ASIE Model...');
-    // Note: Schedule submission uses the same ASIE API
-    addLog(`📋 ${schedule.length} slot jadual sedang diproses...`);
-    
-    // For now, show that data is ready
-    for (let i = 0; i < schedule.length; i++) {
-      const s = schedule[i];
-      addLog(`✅ [${i+1}/${schedule.length}] ${s.subject_text || s.subject} - ${s.session_text || s.className || s.class}`, 'success');
-    }
-    addLog('🎉 Jadual telah disediakan! Gunakan RPH Assist untuk menjana RPH berdasarkan jadual ini.', 'success');
-    
-    // Save to localStorage for RPH Assist to pick up
+  function handleSaveLocal() {
     localStorage.setItem('cids_schedule', JSON.stringify(schedule));
-    addLog('💾 Jadual disimpan ke storan tempatan.', 'info');
-    setSubmitting(false);
+    addLog('💾 Jadual berjaya disimpan ke storan setempat!', 'success');
   }
+
+  const inputStyle = { width: '100%', padding: '12px 14px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 14, outline: 'none', background: '#f8fafc', boxSizing: 'border-box', color: '#1e293b', fontFamily: 'Inter, sans-serif' };
+  const btnPrimary = { padding: '12px 24px', borderRadius: 12, border: 'none', background: '#1ba549', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', width: '100%' };
 
   return (
-    <div>
-      <div className="page-header">
-        <h1>📅 Schedule Assist</h1>
-        <p>Import jadual waktu dari ASIE Model atau upload gambar untuk analisis AI.</p>
-      </div>
+    <div className="module-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
+      <div style={{ width: '100%', maxWidth: 900 }}>
+        <img src="/assets/SCHEDULE AI ASSIST BANNER.png" alt="Schedule Banner" style={{ width: '100%', borderRadius: 16, marginBottom: 24, boxShadow: '0 8px 24px rgba(0,0,0,0.3)', display: 'block' }} />
 
-      <img src="/assets/SCHEDULE AI ASSIST BANNER.png" alt="Schedule Banner" className="module-banner" />
+        {/* Import Card */}
+        <div style={{ background: '#fff', borderRadius: 20, padding: 30, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', color: '#1e293b', marginBottom: 24 }}>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1ba549', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>1</div>
+            <div><h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Import Jadual Waktu</h3><p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Pilih cara untuk mendapatkan jadual.</p></div>
+          </div>
 
-      <div className="grid-2">
-        {/* Option 1: Upload Image */}
-        <div className="card">
-          <div className="card-header">
-            <span className="icon">📷</span>
-            <h2>Upload Gambar Jadual</h2>
-          </div>
-          <div
-            className="upload-zone"
-            onClick={() => fileRef.current?.click()}
-          >
-            {imagePreview ? (
-              <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '8px' }} />
-            ) : (
-              <>
-                <div className="upload-icon">📸</div>
-                <div className="upload-text">Klik untuk muat naik gambar jadual<br /><span className="text-xs">(JPG, PNG)</span></div>
-              </>
-            )}
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
-          <button className="btn btn-primary btn-block mt-4" onClick={handleExtractAI} disabled={!imageBase64 || loading}>
-            {loading ? <><span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Menganalisis...</> : '🤖 Analisis dengan AI'}
+          <button onClick={handleFetchFromAsie} disabled={loading} style={{ ...btnPrimary, marginBottom: 12, opacity: loading ? 0.6 : 1 }}>
+            {loading ? '⏳ Memuat...' : '📥 Import dari ASIE Model'}
           </button>
-        </div>
 
-        {/* Option 2: Import from ASIE */}
-        <div className="card">
-          <div className="card-header">
-            <span className="icon">🌐</span>
-            <h2>Import dari ASIE Model</h2>
-          </div>
-          <div style={{ textAlign: 'center', padding: '30px 0' }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>🏫</div>
-            <p className="text-sm text-muted mb-4">Import jadual terus dari akaun ASIE Model anda secara automatik.</p>
-          </div>
-          <button className="btn btn-success btn-block" onClick={handleImportFromAsie} disabled={loading}>
-            {loading ? <><span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Memuat...</> : '📥 Import Jadual dari ASIE'}
-          </button>
-        </div>
-      </div>
+          <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 12, margin: '8px 0' }}>— atau —</div>
 
-      {/* Schedule Results */}
-      {schedule.length > 0 && (
-        <div className="card mt-6">
-          <div className="card-header" style={{ justifyContent: 'space-between' }}>
-            <div className="flex items-center gap-2">
-              <span className="icon">📋</span>
-              <h2>Jadual Diekstrak ({schedule.length} slot)</h2>
+          <div onClick={() => fileRef.current?.click()} style={{ border: '2px dashed #e2e8f0', borderRadius: 12, padding: 24, textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <div style={{ fontSize: 32 }}>📷</div>
+            <p style={{ fontSize: 13, color: '#64748b', margin: '8px 0 0' }}>Muat naik gambar jadual untuk AI ekstrak</p>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+          </div>
+
+          {imagePreview && (
+            <div style={{ marginTop: 12 }}>
+              <img src={imagePreview} alt="Preview" style={{ width: '100%', borderRadius: 10, maxHeight: 200, objectFit: 'cover' }} />
+              <button onClick={handleExtractAI} disabled={extracting} style={{ ...btnPrimary, marginTop: 12, opacity: extracting ? 0.6 : 1 }}>
+                {extracting ? '🤖 Menganalisis...' : '🤖 Ekstrak menggunakan AI'}
+              </button>
             </div>
-            <button className="btn btn-success btn-sm" onClick={handleSubmitToAsie} disabled={submitting}>
-              💾 Simpan & Gunakan
-            </button>
+          )}
+        </div>
+
+        {/* Schedule Table Card */}
+        <div style={{ background: '#fff', borderRadius: 20, padding: 30, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', color: '#1e293b', marginBottom: 24 }}>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20, justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1ba549', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>2</div>
+              <div><h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Jadual Waktu</h3><p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>{schedule.length} slot dimuatkan.</p></div>
+            </div>
+            {schedule.length > 0 && <button onClick={handleSaveLocal} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1ba549', color: '#fff', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>💾 Simpan</button>}
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Mata Pelajaran</th>
-                  <th>Kelas</th>
-                  <th>Hari</th>
-                  <th>Masa</th>
-                  <th>Sesi</th>
+          {schedule.length > 0 ? (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hari</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kelas</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>M. Pelajaran</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Masa</th>
+              </tr></thead>
+              <tbody>{schedule.map((s, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 500 }}>{s.day}</td>
+                  <td style={{ padding: '10px 12px' }}>{s.className || s.class}</td>
+                  <td style={{ padding: '10px 12px' }}>{s.subject}</td>
+                  <td style={{ padding: '10px 12px', fontSize: 12, color: '#64748b' }}>{s.time}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {schedule.map((s, i) => (
-                  <tr key={i}>
-                    <td>{i + 1}</td>
-                    <td style={{ fontWeight: 600, color: '#fff' }}>{s.subject_text || s.subject}</td>
-                    <td>{s.session_text || s.className || s.class}</td>
-                    <td>{s.day || '-'}</td>
-                    <td>{s.time || '-'}</td>
-                    <td><span className="badge badge-info">{s.sessions || 1}</span></td>
-                  </tr>
-                ))}
-              </tbody>
+              ))}</tbody>
             </table>
-          </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.3 }}>📅</div>
+              <p style={{ color: '#94a3b8', fontSize: 13 }}>Tiada jadual dimuatkan. Import dari ASIE atau muat naik gambar.</p>
+            </div>
+          )}
         </div>
-      )}
 
-      {logs.length > 0 && (
-        <div className="card mt-6">
-          <div className="card-header">
-            <span className="icon">📟</span>
-            <h2>Log</h2>
+        {/* Log */}
+        {logs.length > 0 && (
+          <div style={{ background: '#000', borderRadius: 16, padding: 20, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ color: '#fff', fontSize: 14, marginBottom: 12 }}>📟 Log Aktiviti</h3>
+            <div ref={logRef} className="log-console">{logs.map((l, i) => <div key={i} className={`log-entry ${l.type}`}>{l.msg}</div>)}</div>
           </div>
-          <div className="log-console" ref={logRef}>
-            {logs.map((l, i) => (
-              <div key={i} className={`log-entry ${l.type}`}>{l.msg}</div>
-            ))}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

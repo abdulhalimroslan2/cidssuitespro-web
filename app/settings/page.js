@@ -6,168 +6,136 @@ export default function SettingsPage() {
   const [password, setPassword] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [deepseekKey, setDeepseekKey] = useState('');
-  const [saved, setSaved] = useState(false);
-  const [showPw, setShowPw] = useState(false);
-  const [showApi, setShowApi] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem('cids_settings');
-      if (raw) {
-        const s = JSON.parse(raw);
-        setUsername(s.username || '');
-        // Decrypt base64
-        if (s.password) {
-          try { setPassword(decodeURIComponent(atob(s.password))); } catch { try { setPassword(atob(s.password)); } catch { setPassword(s.password); } }
-        }
-        if (s.apiKey) {
-          try { setApiKey(decodeURIComponent(atob(s.apiKey))); } catch { try { setApiKey(atob(s.apiKey)); } catch { setApiKey(s.apiKey); } }
-        }
-        if (s.deepseekApiKey) {
-          try { setDeepseekKey(decodeURIComponent(atob(s.deepseekApiKey))); } catch { try { setDeepseekKey(atob(s.deepseekApiKey)); } catch { setDeepseekKey(s.deepseekApiKey); } }
-        }
-      }
-    } catch (e) { /* ignore */ }
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      setUsername(s.username || '');
+      let pw = s.password || '';
+      try { pw = decodeURIComponent(atob(pw)); } catch { try { pw = atob(pw); } catch {} }
+      setPassword(pw);
+      let ak = s.apiKey || '';
+      try { ak = decodeURIComponent(atob(ak)); } catch { try { ak = atob(ak); } catch {} }
+      setApiKey(ak);
+      let dk = s.deepseekKey || '';
+      try { dk = decodeURIComponent(atob(dk)); } catch { try { dk = atob(dk); } catch {} }
+      setDeepseekKey(dk);
+    } catch {}
   }, []);
 
-  function handleSave(e) {
-    e.preventDefault();
-    if (username && !password) {
-      alert('⚠️ Sila masukkan Kata Laluan bersama Username anda.');
-      return;
-    }
-
-    const settings = {
-      username: username.trim(),
-      password: password ? btoa(encodeURIComponent(password)) : '',
-      apiKey: apiKey.trim() ? btoa(encodeURIComponent(apiKey.trim())) : '',
-      deepseekApiKey: deepseekKey.trim() ? btoa(encodeURIComponent(deepseekKey.trim())) : '',
+  function handleSave() {
+    const data = {
+      username,
+      password: btoa(encodeURIComponent(password)),
+      apiKey: btoa(encodeURIComponent(apiKey)),
+      deepseekKey: deepseekKey ? btoa(encodeURIComponent(deepseekKey)) : '',
     };
-
-    localStorage.setItem('cids_settings', JSON.stringify(settings));
-    sessionStorage.setItem('cids_settings', JSON.stringify(settings));
-
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    localStorage.setItem('cids_settings', JSON.stringify(data));
+    setSaveStatus('✅ Tetapan telah disimpan!');
+    setTimeout(() => setSaveStatus(''), 3000);
+    // Force sidebar re-render
+    window.dispatchEvent(new Event('storage'));
   }
 
   return (
-    <div>
-      <div className="page-header">
-        <h1>⚙️ Tetapan</h1>
-        <p>Konfigurasi akaun ASIE Model dan kunci API untuk automasi AI.</p>
+    <div className="module-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
+      <div style={{ width: '100%', maxWidth: 650, animation: 'fadeIn 0.5s ease' }}>
+        {/* Banner */}
+        <img src="/assets/SETTING BANNER.png" alt="Setting Banner" style={{
+          width: '100%', borderRadius: 16, marginBottom: 24, boxShadow: '0 8px 24px rgba(0,0,0,0.3)', display: 'block'
+        }} />
+
+        {/* Main Card */}
+        <div style={{
+          background: '#ffffff', borderRadius: 20, padding: 30, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', color: '#1e293b'
+        }}>
+          {/* Step 1: Akaun Pengguna */}
+          <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>1</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>Akaun Pengguna</h3>
+              <p style={{ margin: '0 0 16px', fontSize: 13, color: '#64748b' }}>Maklumat akaun pengguna sistem.</p>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#475569' }}>Username</label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>👤</span>
+                    <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+                      placeholder="Masukkan ID Pengguna"
+                      style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 14, outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#475569' }}>Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>🔒</span>
+                    <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 14, outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0' }} />
+
+          {/* Step 2: API Key */}
+          <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>2</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>API Key</h3>
+              <p style={{ margin: '0 0 16px', fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
+                Sila masukkan API Key untuk menggunakan sistem. Daftar di{' '}
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6' }}>Google AI Studio</a> untuk mendapatkan API Key (percuma).
+              </p>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#475569' }}>Gemini API Key</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>🔑</span>
+                  <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)}
+                    placeholder="•••••••••••••••••••••••••••••"
+                    style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 14, outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#475569' }}>DeepSeek API Key</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>🔑</span>
+                  <input type="password" value={deepseekKey} onChange={e => setDeepseekKey(e.target.value)}
+                    placeholder="•••••••••••••••••••••••••••••"
+                    style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 14, outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0' }} />
+
+          {/* Save Button */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
+            {saveStatus && <span style={{ fontSize: 13, color: '#10b981', fontWeight: 600 }}>{saveStatus}</span>}
+            <button onClick={handleSave} style={{
+              padding: '12px 28px', borderRadius: 12, border: 'none', background: '#3b82f6', color: '#fff',
+              fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)',
+              transition: 'all 0.2s',
+            }}>Simpan Tetapan</button>
+          </div>
+
+          {/* Security Footer */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 20, fontSize: 11, color: '#94a3b8', lineHeight: 1.5 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            Maklumat anda adalah selamat dan tidak akan dikongsi dengan pihak ketiga. Data dilindungi sepenuhnya oleh penyulitan pelayar.
+          </div>
+        </div>
       </div>
-
-      <img src="/assets/SETTING BANNER.png" alt="Setting Banner" className="module-banner" />
-
-      <form onSubmit={handleSave}>
-        <div className="grid-2">
-          {/* ASIE Model Credentials */}
-          <div className="card">
-            <div className="card-header">
-              <span className="icon">🔑</span>
-              <h2>Akaun ASIE Model</h2>
-            </div>
-            <div className="form-group">
-              <label htmlFor="settings-username">Nama Pengguna (Username)</label>
-              <input
-                id="settings-username"
-                type="text"
-                className="form-input"
-                placeholder="cth: cikgu_ali"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="settings-password">Kata Laluan (Password)</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  id="settings-password"
-                  type={showPw ? 'text' : 'password'}
-                  className="form-input"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  style={{ paddingRight: '48px' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(!showPw)}
-                  style={{
-                    position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '14px'
-                  }}
-                >
-                  {showPw ? '🙈' : '👁️'}
-                </button>
-              </div>
-            </div>
-            <p className="text-xs text-muted" style={{ lineHeight: '1.5' }}>
-              Kredensial ini digunakan untuk log masuk ke <strong>asiemodel.net</strong> secara automatik bagi membolehkan modul RPT, RPH, dan Schedule berfungsi.
-            </p>
-          </div>
-
-          {/* API Keys */}
-          <div className="card">
-            <div className="card-header">
-              <span className="icon">🤖</span>
-              <h2>Kunci API (AI)</h2>
-            </div>
-            <div className="form-group">
-              <label htmlFor="settings-gemini">Gemini / OpenRouter API Key</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  id="settings-gemini"
-                  type={showApi ? 'text' : 'password'}
-                  className="form-input"
-                  placeholder="AIza... atau sk-or-v1-..."
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  style={{ paddingRight: '48px' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowApi(!showApi)}
-                  style={{
-                    position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '14px'
-                  }}
-                >
-                  {showApi ? '🙈' : '👁️'}
-                </button>
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="settings-deepseek">DeepSeek API Key (Pilihan)</label>
-              <input
-                id="settings-deepseek"
-                type="password"
-                className="form-input"
-                placeholder="sk-..."
-                value={deepseekKey}
-                onChange={(e) => setDeepseekKey(e.target.value)}
-              />
-            </div>
-            <p className="text-xs text-muted" style={{ lineHeight: '1.5' }}>
-              API Key diperlukan untuk janaan RPH dan analisis jadual menggunakan AI. Sokong <strong>Google Gemini</strong> dan <strong>OpenRouter</strong>.
-            </p>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button type="submit" className="btn btn-primary btn-lg">
-            💾 Simpan Tetapan
-          </button>
-          {saved && (
-            <span className="badge badge-success" style={{ fontSize: '13px', padding: '8px 16px' }}>
-              ✓ Tetapan berjaya disimpan!
-            </span>
-          )}
-        </div>
-      </form>
     </div>
   );
 }

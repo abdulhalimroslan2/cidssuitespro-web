@@ -11,9 +11,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ms">
       <body>
-        <div className="app-layout">
+        <div className="app-container">
           <Sidebar />
-          <main className="main-content">
+          <main className="content-area">
             {children}
           </main>
         </div>
