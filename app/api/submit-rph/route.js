@@ -1,7 +1,7 @@
 // POST /api/submit-rph
 // Proxies through Cloudflare Worker
 
-const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://cids-proxy.abdulhalimroslan2.workers.dev';
+const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://cids-proxy.holistic-measure.workers.dev';
 
 export async function POST(request) {
   try {
