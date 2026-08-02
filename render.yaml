@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: cids-asie-proxy
+    runtime: docker
+    region: singapore
+    plan: free
+    dockerfilePath: ./asie-proxy/Dockerfile
+    dockerContext: ./asie-proxy
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /health
