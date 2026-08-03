@@ -16,16 +16,71 @@ const PORT = process.env.PORT || 3001;
 // ===== BROWSER MANAGEMENT =====
 let browserInstance = null;
 
+// Stealth init script — runs in every new page BEFORE any other JS.
+// Goal: hide Playwright/automation fingerprints from Cloudflare bot detection.
+const STEALTH_INIT_SCRIPT = `
+  // 1) Hide webdriver flag (default in headless Chromium is true)
+  Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+
+  // 2) Patch navigator.permissions to look normal
+  const originalQuery = window.navigator.permissions && window.navigator.permissions.query;
+  if (originalQuery) {
+    window.navigator.permissions.query = (parameters) =>
+      parameters.name === 'notifications'
+        ? Promise.resolve({ state: Notification.permission })
+        : originalQuery(parameters);
+  }
+
+  // 3) Patch navigator.plugins so it doesn't look like a headless browser
+  Object.defineProperty(navigator, 'plugins', {
+    get: () => [
+      { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', length: 1 },
+      { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', length: 1 },
+      { name: 'Native Client', filename: 'internal-nacl-plugin', length: 2 },
+    ],
+  });
+
+  // 4) Patch navigator.languages
+  Object.defineProperty(navigator, 'languages', { get: () => ['ms-MY', 'ms', 'en-US', 'en'] });
+
+  // 5) Patch WebGL vendor/renderer to look like real Chrome
+  const getParameter = WebGLRendering.prototype.getParameter;
+  WebGLRendering.prototype.getParameter = function(parameter) {
+    if (parameter === 37445) return 'Intel Inc.';
+    if (parameter === 37446) return 'Intel Iris OpenGL Engine';
+    return getParameter.call(this, parameter);
+  };
+
+  // 6) Chrome runtime object
+  window.chrome = { runtime: {}, loadTimes: function(){}, csi: function(){}, app: {} };
+`;
+
+const STEALTH_LAUNCH_ARGS = [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-dev-shm-usage',
+  '--disable-gpu',
+  '--disable-blink-features=AutomationControlled',  // hide navigator.webdriver
+  '--no-first-run',
+  '--no-default-browser-check',
+  '--disable-features=IsolateOrigins,site-per-process,AutomationControlled',
+];
+
 async function getBrowser() {
   if (!browserInstance || !browserInstance.isConnected()) {
-    console.log('[Browser] Launching Chromium...');
+    console.log('[Browser] Launching Chromium (stealth mode)...');
     browserInstance = await chromium.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+      args: STEALTH_LAUNCH_ARGS,
     });
     console.log('[Browser] Chromium ready.');
   }
   return browserInstance;
+}
+
+// Apply stealth to every new page (called after context is created)
+async function applyStealth(context) {
+  await context.addInitScript(STEALTH_INIT_SCRIPT);
 }
 
 // Auto-close browser after 10 min of inactivity
@@ -85,7 +140,13 @@ app.post('/get-rpt-list', async (req, res) => {
   let context, page;
   try {
     const browser = await getBrowser();
-    context = await browser.newContext();
+    context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+      locale: 'ms-MY',
+      timezoneId: 'Asia/Kuala_Lumpur',
+    });
+    await applyStealth(context);
     page = await context.newPage();
 
     const loggedIn = await loginASIE(page, credentials.username, credentials.password);
@@ -133,25 +194,31 @@ app.post('/get-schedule', async (req, res) => {
   let context, page;
   try {
     const browser = await getBrowser();
-    context = await browser.newContext();
+    context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+      locale: 'ms-MY',
+      timezoneId: 'Asia/Kuala_Lumpur',
+    });
+    await applyStealth(context);
     page = await context.newPage();
 
     const loggedIn = await loginASIE(page, credentials.username, credentials.password);
     if (!loggedIn) return res.json({ success: false, error: 'Login ASIE gagal.' });
 
     await page.goto('https://asiemodel.net/model/teachers9.php?action=waktumengajar', { waitUntil: 'domcontentloaded', timeout: 30000 });
-await page.waitForTimeout(3000);
+    await page.waitForTimeout(3000);
 
-// DEBUG: log what we see
-const debugInfo = await page.evaluate(() => ({
-  url: window.location.href,
-  title: document.title,
-  rowCount: document.querySelectorAll('.li_row.li_sortable').length,
-  bodyTextSample: document.body.innerText.substring(0, 300),
-}));
-console.log('[get-schedule] DEBUG:', JSON.stringify(debugInfo));
+    // DEBUG: log what we see
+    const debugInfo = await page.evaluate(() => ({
+      url: window.location.href,
+      title: document.title,
+      rowCount: document.querySelectorAll('.li_row.li_sortable').length,
+      bodyTextSample: document.body.innerText.substring(0, 300),
+    }));
+    console.log('[get-schedule] DEBUG:', JSON.stringify(debugInfo));
 
-const schedule = await page.evaluate(() => {
+    const schedule = await page.evaluate(() => {
       const subjectMap = { 'mathematics': 'Matematik', 'physics': 'Fizik', 'chemistry': 'Kimia', 'biology': 'Biologi', 'science': 'Sains', 'arabic': 'Bahasa Arab', 'english': 'Bahasa Inggeris', 'malay': 'Bahasa Melayu', 'history': 'Sejarah', 'geography': 'Geografi', 'islamic_studies': 'Pendidikan Islam', 'moral': 'Pendidikan Moral' };
       const rows = document.querySelectorAll('.li_row.li_sortable');
       const results = [];
@@ -203,7 +270,13 @@ app.post('/submit-rph', async (req, res) => {
   let context, page;
   try {
     const browser = await getBrowser();
-    context = await browser.newContext();
+    context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+      locale: 'ms-MY',
+      timezoneId: 'Asia/Kuala_Lumpur',
+    });
+    await applyStealth(context);
     page = await context.newPage();
 
     // Handle dialogs globally
@@ -504,7 +577,13 @@ app.post('/delete-rph', async (req, res) => {
   let context, page;
   try {
     const browser = await getBrowser();
-    context = await browser.newContext();
+    context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+      locale: 'ms-MY',
+      timezoneId: 'Asia/Kuala_Lumpur',
+    });
+    await applyStealth(context);
     page = await context.newPage();
     page.on('dialog', async d => { try { await d.accept(); } catch {} });
 
